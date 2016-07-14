@@ -45,7 +45,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Game = __webpack_require__(1);
-	
+
 	document.addEventListener("DOMContentLoaded", Game.init);
 
 
@@ -56,15 +56,16 @@
 	const Canvas = __webpack_require__(2);
 	const Wave = __webpack_require__(3);
 	const Ship = __webpack_require__(5);
-	
+	const Listener = __webpack_require__(6);
+
 	function Game(){
 	  this.canvas = new Canvas;
 	  this.waves = [];
 	  this.ships = [];
-	
+
 	  this.tideIn = true;
 	  this.tide = 3;
-	
+
 	  this.lIncreasing = true;
 	  this.color = {
 	    h: Math.random() * 360,
@@ -72,22 +73,32 @@
 	    l: 5,
 	    a: 1
 	  };
-	
+
 	  for(let i = 0; i < 7; i++){
 	    const offset = i * 50;
 	    const wave = new Wave(this.canvas, offset, "rgba(255, 255, 255, .3)");
 	    this.waves.push(wave);
-	
+
 	    this.ships.push(new Ship(this.waves[i], this.canvas.ctx));
 	  }
 	}
-	
+
 	Game.init = function(){
 	  const game = new Game;
 	  game.run();
 	};
-	
+
 	Game.prototype.changeTide = function () {
+		console.log("should change");
+	  if(Listener.keys()[37]){
+			this.tide -= .05;
+			console.log("changing tide");
+		}
+	  if(Listener.keys()[39]){
+			this.tide += .05;
+			console.log("changing tide");
+	}
+
 	  // if(this.tideIn){
 	  //   if(this.tide >= 3.5){
 	  //     this.tideIn = false;
@@ -100,10 +111,10 @@
 	  //   } else this.tide -= .001;
 	  // }
 	};
-	
+
 	Game.prototype.changeColor = function(){
 	  this.color.h >= 360 ? this.color.h = 0 : this.color.h += .1;
-	
+
 	  if(this.lIncreasing){
 	    if(this.color.l >= 30){
 	      this.lIncreasing = false;
@@ -116,13 +127,13 @@
 	    } else this.color.l -= .01;
 	  }
 	};
-	
+
 	Game.prototype.render = function(){
 	  this.changeColor();
 	  this.changeTide();
-	
+
 	  this.canvas.render(this.color);
-	
+
 	  // ships stored in each waves
 	  // each waves renders ships before itself
 	  for(let i = 0; i < this.ships.length; i++){
@@ -131,12 +142,12 @@
 	    if(this.waves[i]) this.waves[i].render(this.tide);
 	  }
 	};
-	
+
 	Game.prototype.run = function(){
 	  this.render();
 	  window.requestAnimationFrame(() => this.run());
 	};
-	
+
 	module.exports = Game;
 
 
@@ -146,25 +157,25 @@
 
 	function Canvas(){
 	  this.self = document.getElementById("canvas")
-	
+
 	  this.self.width = window.innerWidth;
 	  this.self.height = window.innerHeight;
-	
+
 	  this.width = this.self.width;
 	  this.height = this.self.height;
 	  this.ctx = this.self.getContext("2d");
-	
-	
+
+
 	  this.ctx.globalAlpha = 0.7;
 	}
-	
+
 	Canvas.prototype.render = function (color) {
 	  const hsla = `hsla(${color.h}, ${color.s}%, ${color.l}%, ${color.a})`;
 	  this.self.style.background = hsla;
 	  this.ctx.clearRect(0, 0, this.width, this.height);
 	};
-	
-	
+
+
 	module.exports = Canvas;
 
 
@@ -173,18 +184,18 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Point = __webpack_require__(4);
-	
+
 	function Wave(canvas, offset, color) {
 	  this.canvas = canvas;
 	  this.points = Point.generatePoints(canvas.width, canvas.height, offset);
 	  this.color = color;
 	}
-	
+
 	Wave.prototype.render = function(tide) {
 	  const ctx = this.canvas.ctx;
 	  const width = this.canvas.width;
 	  const height = this.canvas.height;
-	
+
 	  ctx.save();
 	  ctx.fillStyle = this.color;
 	  ctx.beginPath();
@@ -198,7 +209,7 @@
 	      //   y: (point.y + nextPoint.y) / 2 + 100
 	      // };
 	      // ctx.quadraticCurveTo(ctrlPoint.x, ctrlPoint.y, nextPoint.x, nextPoint.y);
-	
+
 	      const ctrlPoint = {
 	        x: (point.x + nextPoint.x) / 2,
 	        y: (point.y + nextPoint.y) / 2
@@ -206,16 +217,16 @@
 	      ctx.quadraticCurveTo(point.x, point.y, ctrlPoint.x, ctrlPoint.y);
 	    }
 	  });
-	
+
 	  this.keepPointsInBounds();
-	
+
 	  ctx.lineTo(width, height);
 	  ctx.lineTo(0, height);
 	  ctx.fill();
-	
+
 	  ctx.restore();
 	};
-	
+
 	Wave.prototype.keepPointsInBounds = function(){
 	  if(this.points[this.points.length-1].x > this.canvas.width + (this.canvas.width / 9)){
 	    const newPoint = new Point(
@@ -229,7 +240,7 @@
 	    this.points.pop();
 	  }
 	};
-	
+
 	module.exports = Wave;
 
 
@@ -244,12 +255,12 @@
 	  this.angle = angle;
 	  this.speed = speed;
 	}
-	
+
 	Point.generatePoints = function(width, height, offset){
 	  const yCenter = height / 2;
 	  const spacing = width / 18;
 	  const points = [];
-	
+
 	  for (let x = 0; x <= width + width / 4; x += spacing) {
 	    const angle = Math.random() * 360;
 	    let randomOffset = Math.random() * 60 - 30;
@@ -264,13 +275,13 @@
 	  }
 	  return points;
 	};
-	
+
 	Point.prototype.move = function (tide) {
 	  this.y = this.oldY + Math.sin(this.angle) * 35;
 	  this.x += tide;
 	  this.angle += this.speed;
 	};
-	
+
 	module.exports = Point;
 
 
@@ -285,10 +296,10 @@
 	  this.y = 0;
 	  this.tilt = 0;
 	}
-	
+
 	Ship.prototype.render = function(color){
 	  const hsla = `hsla(${color.h + 120}, ${color.s}%, 0%, ${color.a})`;
-	
+
 	  this.ctx.save();
 	  this.ctx.fillStyle = hsla;
 	  this.ctx.beginPath();
@@ -298,35 +309,69 @@
 	  this.ctx.fill();
 	  this.ctx.restore();
 	};
-	
+
 	Ship.prototype.move = function(){
 	  for(let i = 0; i < this.wave.points.length; i++){
 	    const point = this.wave.points[i];
 	    if(point.x > this.x){
 	      const prevPoint = this.wave.points[i-1];
-	
+
 	      const total = Math.abs(point.x - prevPoint.x)
 	      const left = Math.abs(this.x - prevPoint.x);
 	      const right = Math.abs(this.x - point.x);
 	      const leftWeight = right / total; // opposite on purpose
 	      const rightWeight = left / total; // closer should mean bigger, not smaller
-	
+
 	      this.y = (prevPoint.y * leftWeight + point.y * rightWeight);
 	      const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
 	      this.x += .2 * heightWidthRatio;
 	      this.tilt = 2 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
-	
+
 	      break
 	    }
 	  }
 	};
-	
+
 	module.exports = Ship;
-	
-	
-	
-	
+
+
+
+
 	// y(t) = (y0−2y1+y2)t^2 + (2y1−2y0)t + y0
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	function Listener(){
+	  this._keys = {};
+
+	  document.addEventListener("keydown", e => this._keyDown(e));
+	  document.addEventListener("keyup", e => this._keyUp(e));
+	}
+
+	Listener.prototype._keyDown = function (e) {
+	  const code = e.keyCode;
+	  if(code === 37 || code === 39){
+	    e.preventDefault();
+	    this._keys[e.keyCode] = true;
+	  }
+	};
+
+	Listener.prototype._keyUp = function (e) {
+	  const code = e.keyCode;
+	  if(code === 37 || code === 39){
+	    e.preventDefault();
+	    delete this._keys[code];
+	  }
+	};
+
+	Listener.prototype.keys = function(){
+	  return Object.assign({}, this._keys);
+	};
+
+	module.exports = new Listener;
 
 
 /***/ }
