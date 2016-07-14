@@ -46,9 +46,7 @@
 
 	const Game = __webpack_require__(1);
 	
-	document.addEventListener("DOMContentLoaded", () => {
-	  document.addEventListener("click", Game.init);
-	});
+	document.addEventListener("DOMContentLoaded", Game.init);
 
 
 /***/ },
