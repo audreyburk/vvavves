@@ -64,6 +64,9 @@
 	  this.waves = [];
 	  this.ships = [];
 	
+	  this.tideIn = true;
+	  this.tide = 3;
+	
 	  this.lIncreasing = true;
 	  this.color = {
 	    h: Math.random() * 360,
@@ -86,6 +89,20 @@
 	  game.run();
 	};
 	
+	Game.prototype.changeTide = function () {
+	  // if(this.tideIn){
+	  //   if(this.tide >= 3.5){
+	  //     this.tideIn = false;
+	  //     this.tide -= .001;
+	  //   } else this.tide += .001;
+	  // } else {
+	  //   if(this.tide <= 2){
+	  //     this.tideIn = true;
+	  //     this.tide += .001;
+	  //   } else this.tide -= .001;
+	  // }
+	};
+	
 	Game.prototype.changeColor = function(){
 	  this.color.h >= 360 ? this.color.h = 0 : this.color.h += .1;
 	
@@ -104,6 +121,8 @@
 	
 	Game.prototype.render = function(){
 	  this.changeColor();
+	  this.changeTide();
+	
 	  this.canvas.render(this.color);
 	
 	  // ships stored in each waves
@@ -111,7 +130,7 @@
 	  for(let i = 0; i < this.ships.length; i++){
 	    this.ships[i].move();
 	    this.ships[i].render(this.color);
-	    if(this.waves[i]) this.waves[i].render();
+	    if(this.waves[i]) this.waves[i].render(this.tide);
 	  }
 	};
 	
@@ -163,7 +182,7 @@
 	  this.color = color;
 	}
 	
-	Wave.prototype.render = function() {
+	Wave.prototype.render = function(tide) {
 	  const ctx = this.canvas.ctx;
 	  const width = this.canvas.width;
 	  const height = this.canvas.height;
@@ -173,7 +192,7 @@
 	  ctx.beginPath();
 	  ctx.moveTo(this.points[0].x, this.points[0].y);
 	  this.points.forEach( (point, i) => {
-	    point.move();
+	    point.move(tide);
 	    const nextPoint = this.points[i + 1];
 	    if (nextPoint) {
 	      // const ctrlPoint = {
@@ -248,9 +267,9 @@
 	  return points;
 	};
 	
-	Point.prototype.move = function () {
+	Point.prototype.move = function (tide) {
 	  this.y = this.oldY + Math.sin(this.angle) * 35;
-	  this.x += 3;
+	  this.x += tide;
 	  this.angle += this.speed;
 	};
 	
@@ -264,7 +283,7 @@
 	function Ship(wave, ctx){
 	  this.wave = wave;
 	  this.ctx = ctx;
-	  this.x = Math.random() * 1400 + 100;
+	  this.x = Math.random() * (window.innerWidth - 200) + 100;
 	  this.y = 0;
 	  this.tilt = 0;
 	}
@@ -296,7 +315,7 @@
 	
 	      this.y = (prevPoint.y * leftWeight + point.y * rightWeight);
 	      const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
-	      this.x += .5 * heightWidthRatio;
+	      this.x += .2 * heightWidthRatio;
 	      this.tilt = 2 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	
 	      break
