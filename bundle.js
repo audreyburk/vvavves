@@ -78,7 +78,8 @@
 	    const offset = i * 50;
 	    const wave = new Wave(this.canvas, offset, "rgba(255, 255, 255, .3)");
 	    this.waves.push(wave);
-	    this.ships.push(new Ship(this.waves[i], this.canvas.ctx));
+	    const ship = (i % 1 === 0 ? new Ship(this.waves[i], this.canvas.ctx) : undefined)
+	    this.ships.push(ship);
 	  }
 	}
 	
@@ -99,18 +100,18 @@
 	};
 	
 	Game.prototype.changeColor = function(){
-	  this.color.h >= 360 ? this.color.h = 0 : this.color.h += .1;
+	  this.color.h >= 360 ? this.color.h = 0 : this.color.h += .05;
 	
 	  if(this.lIncreasing){
 	    if(this.color.l >= 30){
 	      this.lIncreasing = false;
-	      this.color.l -= .01;
-	    } else this.color.l += .01;
+	      this.color.l -= .005;
+	    } else this.color.l += .005;
 	  } else {
 	    if(this.color.l <= 5){
 	      this.lIncreasing = true;
-	      this.color.l += .01;
-	    } else this.color.l -= .01;
+	      this.color.l += .005;
+	    } else this.color.l -= .005;
 	  }
 	};
 	
@@ -214,9 +215,7 @@
 	    const newPoint = new Point(
 	      this.points[0].x - (this.canvas.width / 18),
 	      this.points[this.points.length-1].y,
-	      this.points[this.points.length-1].oldY,
-	      Math.random() * 360,
-	      0.0175 + Math.random()*0.0175
+	      this.points[this.points.length-1].oldY
 	    );
 	    this.points.unshift(newPoint);
 	    this.points.pop();
@@ -224,9 +223,7 @@
 	    const newPoint = new Point(
 	      this.points[this.points.length-1].x + (this.canvas.width / 18),
 	      this.points[0].y,
-	      this.points[0].oldY,
-	      Math.random() * 360,
-	      0.0175 + Math.random()*0.0175
+	      this.points[0].oldY
 	    );
 	    this.points.push(newPoint);
 	    this.points.shift();
@@ -242,12 +239,14 @@
 
 	const Listener = __webpack_require__(6);
 	
-	function Point(x, y, oldY, angle, speed){
+	function Point(x, y, oldY){
 	  this.x = x;
 	  this.y = y;
 	  this.oldY = oldY;
-	  this.angle = angle;
-	  this.speed = speed;
+	
+	  this.angle = Math.random() * 360;
+	  this.speed = 0.0075 + Math.random()*0.0275;
+	  this.amplitude = Math.random() * 10 + 30;
 	}
 	
 	Point.generatePoints = function(width, height, offset){
@@ -256,14 +255,11 @@
 	  const points = [];
 	
 	  for (let x = 0; x <= width + width / 4; x += spacing) {
-	    const angle = Math.random() * 360;
 	    let randomOffset = Math.random() * 60 - 30;
 	    const point = new Point(
 	      x + (Math.random()*20 - 10),
 	      yCenter + offset + randomOffset,
-	      yCenter + offset + randomOffset + 10 + Math.random() * 20,
-	      angle,
-	      0.0175 + Math.random()*0.0175
+	      yCenter + offset + randomOffset + 10 + Math.random() * 20
 	    );
 	    points.push(point);
 	  }
@@ -271,9 +267,9 @@
 	};
 	
 	Point.prototype.move = function (tide) {
-	  this.y = this.oldY + Math.sin(this.angle) * 35;
+	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * Listener.mouseY * .5 + Math.sin(this.angle) * this.amplitude * .5;
 	  this.x += tide;
-	  this.angle += this.speed * Listener.mouseY + .5 * this.speed;
+	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
 	};
 	
 	module.exports = Point;
@@ -333,7 +329,9 @@
 	
 	
 	  // this.x += Listener.mouseY * 3;
-	  if(this.x < this.wave.points[0].x || this.x > this.wave.points[this.wave.points.length - 1]) return;
+	
+	  if(this.x < this.wave.points[0].x ||
+	     this.x > this.wave.points[this.wave.points.length - 1]) return;
 	
 	  for(let i = 0; i < this.wave.points.length; i++){
 	    const point = this.wave.points[i];
@@ -348,7 +346,10 @@
 	
 	      this.y = (prevPoint.y * leftWeight + point.y * rightWeight);
 	      const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
-	      this.x += 10 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	      console.log(heightWidthRatio);
+	
+	      // maybe make use of the tide variable when determining x movement
+	      this.x += 6 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	      this.tilt = (Math.PI / 2) * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	
 	      break
@@ -399,7 +400,6 @@
 	Listener.prototype._mouseMove = function (e) {
 	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
 	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
-	  console.log(this.mouseY);
 	};
 	
 	
