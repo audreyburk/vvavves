@@ -82,6 +82,9 @@
 	  }
 	}
 	
+	// need a layer class!
+	// will hold boats/leaves/waves on same layer
+	
 	Game.init = function(){
 	  const game = new Game;
 	  game.run();
@@ -290,14 +293,35 @@
 	
 	Ship.prototype.render = function(color){
 	  const hsla = `hsla(${color.h + 120}, ${color.s}%, 0%, ${color.a})`;
+	  this.ctx.fillStyle = hsla;
 	
 	  this.ctx.save();
-	  this.ctx.fillStyle = hsla;
+	
+	  // hull
 	  this.ctx.beginPath();
 	  const begin = .2 + this.tilt;
 	  const end = Math.PI-.2 + this.tilt;
-	  this.ctx.arc(this.x, this.y - 15, 25, begin, end);
+	  this.ctx.arc(this.x, this.y - 20, 25, begin, end);
 	  this.ctx.fill();
+	
+	  // rotate for mast and sail
+	  this.ctx.translate(this.x, this.y);
+	  this.ctx.rotate(this.tilt); // rotate
+	
+	  // mast
+	  // this.ctx.moveTo(0, -15);
+	  // this.ctx.lineTo(0, -60);
+	  // this.ctx.stroke();
+	  this.ctx.closePath();
+	  this.ctx.beginPath();
+	
+	  // sail
+	  this.ctx.fillStyle = "white";
+	  this.ctx.moveTo(0, -60);
+	  this.ctx.lineTo(-30 - (this.tilt * 60), -20);
+	  this.ctx.lineTo(30 - (this.tilt * 60), -20);
+	  this.ctx.fill();
+	
 	  this.ctx.restore();
 	};
 	
@@ -317,7 +341,7 @@
 	
 	      this.y = (prevPoint.y * leftWeight + point.y * rightWeight);
 	      const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
-	      this.x += 6 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	      this.x += 10 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	      this.tilt = (Math.PI / 2) * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	
 	      break
