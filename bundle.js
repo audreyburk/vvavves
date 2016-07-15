@@ -91,7 +91,7 @@
 	};
 	
 	Game.prototype.changeTide = function () {
-	  if(this.tide > 5 * Listener.mousePosition){
+	  if(this.tide > 5 * Listener.mouseX){
 	    this.tide -= 0.1;
 	  } else {
 	    this.tide += 0.1;
@@ -238,8 +238,10 @@
 
 /***/ },
 /* 4 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
+	const Listener = __webpack_require__(6);
+	
 	function Point(x, y, oldY, angle, speed){
 	  this.x = x;
 	  this.y = y;
@@ -271,7 +273,7 @@
 	Point.prototype.move = function (tide) {
 	  this.y = this.oldY + Math.sin(this.angle) * 35;
 	  this.x += tide;
-	  this.angle += this.speed;
+	  this.angle += this.speed * Listener.mouseY + this.speed;
 	};
 	
 	module.exports = Point;
@@ -328,6 +330,10 @@
 	Ship.prototype.move = function(){
 	  if(Listener.keys[40]) this.x += 2;
 	  if(Listener.keys[38]) this.x -= 2;
+	
+	
+	  // this.x += Listener.mouseY * 3;
+	
 	  for(let i = 0; i < this.wave.points.length; i++){
 	    const point = this.wave.points[i];
 	    if(point.x > this.x){
@@ -365,7 +371,8 @@
 	
 	function Listener(){
 	  this.keys = {};
-	  this.mousePosition = 0;
+	  this.mouseX = 0;
+	  this.mouseY = 0;
 	
 	  document.addEventListener("keydown", e => this._keyDown(e));
 	  document.addEventListener("keyup", e => this._keyUp(e));
@@ -389,7 +396,9 @@
 	};
 	
 	Listener.prototype._mouseMove = function (e) {
-	  this.mousePosition = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
+	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
+	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
+	  console.log(this.mouseY);
 	};
 	
 	
