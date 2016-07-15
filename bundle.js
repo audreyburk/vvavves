@@ -89,8 +89,13 @@
 	};
 	
 	Game.prototype.changeTide = function () {
-	  if(Listener.keys()[37]) this.tide -= .05;
-	  if(Listener.keys()[39]) this.tide += .05;
+	  console.log(Listener.mousePosition);
+	  // make this smooth by checking if we're higher/lower than hat number, then incrementing by .05 or whatev
+	  if(this.tide > 5 * Listener.mousePosition){
+	    this.tide -= 0.1;
+	  } else {
+	    this.tide += 0.1;
+	  }
 	
 	  // if(this.tideIn){
 	  //   if(this.tide >= 3.5){
@@ -197,12 +202,6 @@
 	    point.move(tide);
 	    const nextPoint = this.points[i + 1];
 	    if (nextPoint) {
-	      // const ctrlPoint = {
-	      //   x: (point.x + nextPoint.x) / 2,
-	      //   y: (point.y + nextPoint.y) / 2 + 100
-	      // };
-	      // ctx.quadraticCurveTo(ctrlPoint.x, ctrlPoint.y, nextPoint.x, nextPoint.y);
-	
 	      const ctrlPoint = {
 	        x: (point.x + nextPoint.x) / 2,
 	        y: (point.y + nextPoint.y) / 2
@@ -231,6 +230,16 @@
 	    );
 	    this.points.unshift(newPoint);
 	    this.points.pop();
+	  } else if(this.points[0].x < (0 - (this.canvas.width / 9))){
+	    const newPoint = new Point(
+	      this.points[this.points.length-1].x + (this.canvas.width / 18),
+	      this.points[0].y,
+	      this.points[0].oldY,
+	      Math.random() * 360,
+	      0.0175 + Math.random()*0.0175
+	    );
+	    this.points.push(newPoint);
+	    this.points.shift();
 	  }
 	};
 	
@@ -306,8 +315,8 @@
 	};
 	
 	Ship.prototype.move = function(){
-	  if(Listener.keys()[40]) this.x += 1;
-	  if(Listener.keys()[38]) this.x -= 1;
+	  if(Listener.keys[40]) this.x += 1;
+	  if(Listener.keys[38]) this.x -= 1;
 	  for(let i = 0; i < this.wave.points.length; i++){
 	    const point = this.wave.points[i];
 	    if(point.x > this.x){
@@ -321,7 +330,7 @@
 	
 	      this.y = (prevPoint.y * leftWeight + point.y * rightWeight);
 	      const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
-	      this.x += heightWidthRatio;
+	      this.x += 2 * heightWidthRatio;
 	      this.tilt = (Math.PI / 2) * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	
 	      break
@@ -344,10 +353,12 @@
 	const _viableKeys = [37, 38, 39, 40];
 	
 	function Listener(){
-	  this._keys = {};
+	  this.keys = {};
+	  this.mousePosition = 0;
 	
 	  document.addEventListener("keydown", e => this._keyDown(e));
 	  document.addEventListener("keyup", e => this._keyUp(e));
+	  document.addEventListener("mousemove", e => this._mouseMove(e));
 	}
 	
 	Listener.prototype._keyDown = function (e) {
@@ -367,9 +378,10 @@
 	  }
 	};
 	
-	Listener.prototype.keys = function(){
-	  return Object.assign({}, this._keys);
+	Listener.prototype._mouseMove = function (e) {
+	  this.mousePosition = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
 	};
+	
 	
 	module.exports = new Listener;
 
