@@ -273,7 +273,7 @@
 	Point.prototype.move = function (tide) {
 	  this.y = this.oldY + Math.sin(this.angle) * 35;
 	  this.x += tide;
-	  this.angle += this.speed * Listener.mouseY + this.speed;
+	  this.angle += this.speed * Listener.mouseY + .5 * this.speed;
 	};
 	
 	module.exports = Point;
