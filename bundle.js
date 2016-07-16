@@ -231,7 +231,7 @@
 	  this.points = Point.generatePoints(
 	    canvas.width,
 	    canvas.height,
-	    depth,
+	    depth * 50,
 	    this.ratio,
 	    this.spacing
 	  );
@@ -268,24 +268,26 @@
 	};
 	
 	Wave.prototype.keepPointsInBounds = function(){
-	  if(this.points[this.points.length-1].x > this.canvas.width + this.spacing * 2){
+	  const points = this.points;
+	  const spacing = this.spacing;
+	  if(points[points.length-1].x > this.canvas.width + spacing * 2){
 	    const newPoint = new Point(
-	      this.points[0].x - this.spacing,
-	      this.points[this.points.length-1].y,
-	      this.points[this.points.length-1].oldY,
-	      this.points[0].ratio
+	      points[0].x - spacing,
+	      points[points.length-1].y,
+	      points[points.length-1].oldY,
+	      points[0].ratio
 	    );
-	    this.points.unshift(newPoint);
-	    this.points.pop();
-	  } else if(this.points[0].x < (0 - this.spacing * 2)){
+	    points.unshift(newPoint);
+	    points.pop();
+	  } else if(points[0].x < (0 - spacing * 2)){
 	    const newPoint = new Point(
-	      this.points[this.points.length-1].x + this.spacing,
-	      this.points[0].y,
-	      this.points[0].oldY,
-	      this.points[0].ratio
+	      points[points.length-1].x + spacing,
+	      points[0].y,
+	      points[0].oldY,
+	      points[0].ratio
 	    );
-	    this.points.push(newPoint);
-	    this.points.shift();
+	    points.push(newPoint);
+	    points.shift();
 	  }
 	};
 	
@@ -309,8 +311,7 @@
 	  this.amplitude = Math.random() * 10 + 30;
 	}
 	
-	Point.generatePoints = function(width, height, depth, ratio, spacing){
-	  const offset = depth * 50;
+	Point.generatePoints = function(width, height, y, ratio, spacing){
 	  const yCenter = height / 2;
 	  const points = [];
 	
@@ -318,8 +319,8 @@
 	    let randomOffset = Math.random() * 60 - 30;
 	    const point = new Point(
 	      x + (Math.random()*20 - 10) * ratio,
-	      yCenter + offset + randomOffset * ratio,
-	      yCenter + offset + randomOffset * ratio + 10 + Math.random() * 20,
+	      yCenter + y * ratio + randomOffset * ratio + Math.random() * 20,
+	      yCenter + y * ratio + randomOffset * ratio + Math.random() * 20,
 	      ratio
 	    );
 	    points.push(point);
