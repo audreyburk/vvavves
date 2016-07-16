@@ -337,6 +337,7 @@
 	  this.x = Math.random() * (window.innerWidth - 100) + 50;
 	  this.y = 0;
 	  this.tilt = 0;
+	  this.colorDifference = (Math.floor(Math.random() * 5) - 2) * 15;
 	}
 	
 	Ship.prototype.render = function(){
@@ -363,7 +364,7 @@
 	  this.ctx.beginPath();
 	
 	  // sail
-	  this.ctx.fillStyle = Color.sail();
+	  this.ctx.fillStyle = Color.sail(this.colorDifference);
 	  this.ctx.moveTo(0, -60);
 	  this.ctx.lineTo(-30 - (this.tilt * 60), -20);
 	  this.ctx.lineTo(30 - (this.tilt * 60), -20);
@@ -447,18 +448,20 @@
 	  return hsla;
 	};
 	
-	Color.prototype.hull = function () {
-	  const rgba = `rgba(0, 0, 0, 0.9)`;
-	  return rgba;
-	};
-	
 	Color.prototype.wave = function () {
 	  const rgba = `rgba(255, 255, 255, 0.2)`;
 	  return rgba;
 	};
 	
-	Color.prototype.sail = function () {
-	  const hsla = `hsla(${this.h + 120}, ${this.s}%, ${this.l}%, .9)`;
+	Color.prototype.hull = function () {
+	  const hsla = `hsla(${this.h}, 15%, 5%, 1)`;
+	  return hsla;
+	};
+	
+	Color.prototype.sail = function (dif) {
+	  // stands out too much on light bg as is
+	  // alter lightness/opacity based on base lightness??
+	  const hsla = `hsla(${this.h + 135 + dif}, 75%, 35%, 1)`;
 	  return hsla;
 	};
 	
