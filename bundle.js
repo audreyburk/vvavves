@@ -211,7 +211,7 @@
 	    ship.move();
 	    ship.render();
 	  });
-	  this.wave.render(tide); // TODO: globalize game for easy tide reference??
+	  this.wave.render(tide); // globalize game for easy tide reference??
 	};
 	
 	module.exports = Layer;
@@ -246,6 +246,7 @@
 	  ctx.fillStyle = Color.wave();
 	  ctx.beginPath();
 	  ctx.moveTo(this.points[0].x, this.points[0].y);
+	  // spit movement into separate function
 	  this.points.forEach( (point, i) => {
 	    point.move(tide);
 	    const nextPoint = this.points[i + 1];
@@ -270,6 +271,7 @@
 	Wave.prototype.keepPointsInBounds = function(){
 	  const points = this.points;
 	  const spacing = this.spacing;
+	
 	  if(points[points.length-1].x > this.canvas.width + spacing * 2){
 	    const newPoint = new Point(
 	      points[0].x - spacing,
@@ -279,6 +281,7 @@
 	    );
 	    points.unshift(newPoint);
 	    points.pop();
+	
 	  } else if(points[0].x < (0 - spacing * 2)){
 	    const newPoint = new Point(
 	      points[points.length-1].x + spacing,
