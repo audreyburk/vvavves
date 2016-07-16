@@ -54,9 +54,11 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Canvas = __webpack_require__(2);
-	const Wave = __webpack_require__(3);
-	const Ship = __webpack_require__(5);
-	const Listener = __webpack_require__(6);
+	const Layer = __webpack_require__(4);
+	
+	// global singleton canvas, or too dangerous?
+	
+	const Listener = __webpack_require__(3);
 	
 	function Game(){
 	  this.canvas = new Canvas;
@@ -67,6 +69,8 @@
 	  this.tide = 3;
 	
 	  this.lIncreasing = true;
+	
+	  // add a separate color global class!
 	  this.color = {
 	    h: Math.random() * 360,
 	    s: 100,
@@ -74,17 +78,13 @@
 	    a: 1
 	  };
 	
+	  this.layers = [];
+	
 	  for(let i = 0; i < 7; i++){
-	    const offset = i * 50;
-	    const wave = new Wave(this.canvas, offset, "rgba(255, 255, 255, .3)");
-	    this.waves.push(wave);
-	    const ship = (i % 1 === 0 ? new Ship(this.waves[i], this.canvas.ctx) : undefined)
-	    this.ships.push(ship);
+	    const layer = new Layer(i, this.canvas);
+	    this.layers.push(layer);
 	  }
 	}
-	
-	// need a layer class!
-	// will hold boats/leaves/waves on same layer
 	
 	Game.init = function(){
 	  const game = new Game;
@@ -120,16 +120,9 @@
 	  this.changeTide();
 	
 	  this.canvas.render(this.color);
-	
-	  // ships stored in each waves
-	  // each waves renders ships before itself
-	  for(let i = 0; i < this.waves.length; i++){
-	    if(this.ships[i]){
-	      this.ships[i].move();
-	      this.ships[i].render(this.color);
-	    }
-	    if(this.waves[i]) this.waves[i].render(this.tide);
-	  }
+	  this.layers.forEach( layer => {
+	    layer.render(this.color, this.tide);
+	  });
 	};
 	
 	Game.prototype.run = function(){
@@ -170,9 +163,88 @@
 
 /***/ },
 /* 3 */
+/***/ function(module, exports) {
+
+	const _viableKeys = [37, 38, 39, 40];
+	
+	function Listener(){
+	  this.keys = {};
+	  this.mouseX = 0;
+	  this.mouseY = 0;
+	
+	  document.addEventListener("keydown", e => this._keyDown(e));
+	  document.addEventListener("keyup", e => this._keyUp(e));
+	  document.addEventListener("mousemove", e => this._mouseMove(e));
+	}
+	
+	Listener.prototype._keyDown = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    this.keys[e.keyCode] = true;
+	  }
+	};
+	
+	Listener.prototype._keyUp = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    delete this.keys[code];
+	  }
+	};
+	
+	Listener.prototype._mouseMove = function (e) {
+	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
+	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
+	};
+	
+	
+	module.exports = new Listener;
+
+
+/***/ },
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Point = __webpack_require__(4);
+	const Wave = __webpack_require__(5);
+	const Ship = __webpack_require__(7);
+	
+	function Layer(depth, canvas){
+	  this.depth = depth;
+	  this.canvas = canvas;
+	
+	  this.populate();
+	}
+	
+	Layer.prototype.populate = function () {
+	  const offset = this.depth * 50;
+	  const wave = new Wave(this.canvas, offset, "rgba(255, 255, 255, .3)");
+	  this.wave = wave;
+	
+	  this.ships = [];
+	  const count = Math.random() * 3;
+	  for(let i = 0; i < count; i++){
+	    const ship = new Ship(this.wave, this.canvas.ctx);
+	    this.ships.push(ship);
+	  }
+	};
+	
+	Layer.prototype.render = function (color, tide) {
+	  this.ships.forEach( ship => {
+	    ship.move();
+	    ship.render(color);
+	  });
+	  this.wave.render(tide); // TODO: globalize game for easy tide reference??
+	};
+	
+	module.exports = Layer;
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	const Point = __webpack_require__(6);
 	
 	function Wave(canvas, offset, color) {
 	  this.canvas = canvas;
@@ -234,10 +306,10 @@
 
 
 /***/ },
-/* 4 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(6);
+	const Listener = __webpack_require__(3);
 	
 	function Point(x, y, oldY){
 	  this.x = x;
@@ -276,10 +348,10 @@
 
 
 /***/ },
-/* 5 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(6);
+	const Listener = __webpack_require__(3);
 	
 	function Ship(wave, ctx){
 	  this.wave = wave;
@@ -363,47 +435,6 @@
 	
 	
 	// y(t) = (y0−2y1+y2)t^2 + (2y1−2y0)t + y0
-
-
-/***/ },
-/* 6 */
-/***/ function(module, exports) {
-
-	const _viableKeys = [37, 38, 39, 40];
-	
-	function Listener(){
-	  this.keys = {};
-	  this.mouseX = 0;
-	  this.mouseY = 0;
-	
-	  document.addEventListener("keydown", e => this._keyDown(e));
-	  document.addEventListener("keyup", e => this._keyUp(e));
-	  document.addEventListener("mousemove", e => this._mouseMove(e));
-	}
-	
-	Listener.prototype._keyDown = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    this.keys[e.keyCode] = true;
-	  }
-	};
-	
-	Listener.prototype._keyUp = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    delete this.keys[code];
-	  }
-	};
-	
-	Listener.prototype._mouseMove = function (e) {
-	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
-	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
-	};
-	
-	
-	module.exports = new Listener;
 
 
 /***/ }
