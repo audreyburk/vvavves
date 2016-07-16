@@ -222,7 +222,7 @@
 	  this.wave = wave;
 	
 	  this.ships = [];
-	  const count = Math.random() * 3;
+	  const count = Math.floor(Math.random() * 3);
 	  for(let i = 0; i < count; i++){
 	    const ship = new Ship(this.wave, this.canvas.ctx);
 	    this.ships.push(ship);
