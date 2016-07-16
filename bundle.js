@@ -71,7 +71,7 @@
 	
 	  this.layers = [];
 	
-	  for(let i = 0; i < 7; i++){
+	  for(let i = 0; i < 5; i++){
 	    const layer = new Layer(i, this.canvas);
 	    this.layers.push(layer);
 	  }
@@ -449,19 +449,20 @@
 	};
 	
 	Color.prototype.wave = function () {
-	  const rgba = `rgba(255, 255, 255, 0.2)`;
+	  const rgba = `rgba(255, 255, 255, 0.3)`;
 	  return rgba;
 	};
 	
 	Color.prototype.hull = function () {
-	  const hsla = `hsla(${this.h}, 15%, 5%, 1)`;
+	  const hsla = `hsla(${this.h}, 15%, 2%, 1)`;
 	  return hsla;
 	};
 	
 	Color.prototype.sail = function (dif) {
 	  // stands out too much on light bg as is
 	  // alter lightness/opacity based on base lightness??
-	  const hsla = `hsla(${this.h + 135 + dif}, 75%, 35%, 1)`;
+	  // return "white";
+	  const hsla = `hsla(${this.h + 135 + dif}, 50%, 80%, 1)`;
 	  return hsla;
 	};
 	
