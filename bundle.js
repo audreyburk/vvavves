@@ -54,9 +54,9 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Canvas = __webpack_require__(2);
-	const Wave = __webpack_require__(3);
-	const Ship = __webpack_require__(5);
-	const Listener = __webpack_require__(6);
+	const Wave = __webpack_require__(5);
+	const Ship = __webpack_require__(7);
+	const Listener = __webpack_require__(3);
 	
 	function Game(){
 	  this.canvas = new Canvas;
@@ -170,9 +170,51 @@
 
 /***/ },
 /* 3 */
+/***/ function(module, exports) {
+
+	const _viableKeys = [37, 38, 39, 40];
+	
+	function Listener(){
+	  this.keys = {};
+	  this.mouseX = 0;
+	  this.mouseY = 0;
+	
+	  document.addEventListener("keydown", e => this._keyDown(e));
+	  document.addEventListener("keyup", e => this._keyUp(e));
+	  document.addEventListener("mousemove", e => this._mouseMove(e));
+	}
+	
+	Listener.prototype._keyDown = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    this.keys[e.keyCode] = true;
+	  }
+	};
+	
+	Listener.prototype._keyUp = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    delete this.keys[code];
+	  }
+	};
+	
+	Listener.prototype._mouseMove = function (e) {
+	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
+	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
+	};
+	
+	
+	module.exports = new Listener;
+
+
+/***/ },
+/* 4 */,
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Point = __webpack_require__(4);
+	const Point = __webpack_require__(6);
 	
 	function Wave(canvas, offset, color) {
 	  this.canvas = canvas;
@@ -234,10 +276,10 @@
 
 
 /***/ },
-/* 4 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(6);
+	const Listener = __webpack_require__(3);
 	
 	function Point(x, y, oldY){
 	  this.x = x;
@@ -276,10 +318,10 @@
 
 
 /***/ },
-/* 5 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(6);
+	const Listener = __webpack_require__(3);
 	
 	function Ship(wave, ctx){
 	  this.wave = wave;
@@ -363,47 +405,6 @@
 	
 	
 	// y(t) = (y0−2y1+y2)t^2 + (2y1−2y0)t + y0
-
-
-/***/ },
-/* 6 */
-/***/ function(module, exports) {
-
-	const _viableKeys = [37, 38, 39, 40];
-	
-	function Listener(){
-	  this.keys = {};
-	  this.mouseX = 0;
-	  this.mouseY = 0;
-	
-	  document.addEventListener("keydown", e => this._keyDown(e));
-	  document.addEventListener("keyup", e => this._keyUp(e));
-	  document.addEventListener("mousemove", e => this._mouseMove(e));
-	}
-	
-	Listener.prototype._keyDown = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    this.keys[e.keyCode] = true;
-	  }
-	};
-	
-	Listener.prototype._keyUp = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    delete this.keys[code];
-	  }
-	};
-	
-	Listener.prototype._mouseMove = function (e) {
-	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
-	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
-	};
-	
-	
-	module.exports = new Listener;
 
 
 /***/ }
