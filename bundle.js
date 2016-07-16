@@ -83,7 +83,7 @@
 	};
 	
 	Game.prototype.changeTide = function () {
-	  if(this.tide > 5 * Listener.mouseX){
+	  if(this.tide > 4 * Listener.mouseX){
 	    this.tide -= 0.1;
 	  } else {
 	    this.tide += 0.1;
@@ -151,6 +151,7 @@
 	  document.addEventListener("keydown", e => this._keyDown(e));
 	  document.addEventListener("keyup", e => this._keyUp(e));
 	  document.addEventListener("mousemove", e => this._mouseMove(e));
+	  document.addEventListener("mouseenter", e => this._mouseMove(e));
 	}
 	
 	Listener.prototype._keyDown = function (e) {
@@ -187,20 +188,20 @@
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
+	  this.ratio = 1 + depth/8;
 	  this.canvas = canvas;
 	
 	  this.populate();
 	}
 	
 	Layer.prototype.populate = function () {
-	  const y = this.depth * 50;
-	  const wave = new Wave(this.canvas, y);
+	  const wave = new Wave(this.canvas, this.depth, this.ratio);
 	  this.wave = wave;
 	
 	  this.ships = [];
 	  const count = 1
 	  for(let i = 0; i < count; i++){
-	    const ship = new Ship(this.wave, this.canvas.ctx);
+	    const ship = new Ship(this.wave, this.canvas.ctx, this.ratio);
 	    this.ships.push(ship);
 	  }
 	};
@@ -223,9 +224,17 @@
 	const Point = __webpack_require__(6);
 	const Color = __webpack_require__(8);
 	
-	function Wave(canvas, offset) {
+	function Wave(canvas, depth, ratio) {
 	  this.canvas = canvas;
-	  this.points = Point.generatePoints(canvas.width, canvas.height, offset);
+	  this.ratio = ratio;
+	  this.spacing = 70 * this.ratio;
+	  this.points = Point.generatePoints(
+	    canvas.width,
+	    canvas.height,
+	    depth,
+	    this.ratio,
+	    this.spacing
+	  );
 	}
 	
 	Wave.prototype.render = function(tide) {
@@ -259,19 +268,21 @@
 	};
 	
 	Wave.prototype.keepPointsInBounds = function(){
-	  if(this.points[this.points.length-1].x > this.canvas.width + (this.canvas.width / 9)){
+	  if(this.points[this.points.length-1].x > this.canvas.width + this.spacing * 2){
 	    const newPoint = new Point(
-	      this.points[0].x - (this.canvas.width / 18),
+	      this.points[0].x - this.spacing,
 	      this.points[this.points.length-1].y,
-	      this.points[this.points.length-1].oldY
+	      this.points[this.points.length-1].oldY,
+	      this.points[0].ratio
 	    );
 	    this.points.unshift(newPoint);
 	    this.points.pop();
-	  } else if(this.points[0].x < (0 - (this.canvas.width / 9))){
+	  } else if(this.points[0].x < (0 - this.spacing * 2)){
 	    const newPoint = new Point(
-	      this.points[this.points.length-1].x + (this.canvas.width / 18),
+	      this.points[this.points.length-1].x + this.spacing,
 	      this.points[0].y,
-	      this.points[0].oldY
+	      this.points[0].oldY,
+	      this.points[0].ratio
 	    );
 	    this.points.push(newPoint);
 	    this.points.shift();
@@ -287,27 +298,29 @@
 
 	const Listener = __webpack_require__(3);
 	
-	function Point(x, y, oldY){
+	function Point(x, y, oldY, ratio){
 	  this.x = x;
 	  this.y = y;
 	  this.oldY = oldY;
+	  this.ratio = ratio;
 	
 	  this.angle = Math.random() * 360;
 	  this.speed = 0.0075 + Math.random()*0.0275;
 	  this.amplitude = Math.random() * 10 + 30;
 	}
 	
-	Point.generatePoints = function(width, height, offset){
+	Point.generatePoints = function(width, height, depth, ratio, spacing){
+	  const offset = depth * 50;
 	  const yCenter = height / 2;
-	  const spacing = width / 18;
 	  const points = [];
 	
-	  for (let x = 0; x <= width + width / 4; x += spacing) {
+	  for (let x = -(spacing * 2); x <= width + spacing * 2; x += spacing) {
 	    let randomOffset = Math.random() * 60 - 30;
 	    const point = new Point(
-	      x + (Math.random()*20 - 10),
-	      yCenter + offset + randomOffset,
-	      yCenter + offset + randomOffset + 10 + Math.random() * 20
+	      x + (Math.random()*20 - 10) * ratio,
+	      yCenter + offset + randomOffset * ratio,
+	      yCenter + offset + randomOffset * ratio + 10 + Math.random() * 20,
+	      ratio
 	    );
 	    points.push(point);
 	  }
@@ -315,8 +328,8 @@
 	};
 	
 	Point.prototype.move = function (tide) {
-	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * Listener.mouseY * .5 + Math.sin(this.angle) * this.amplitude * .5;
-	  this.x += tide;
+	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * Listener.mouseY * this.ratio * .5 + Math.sin(this.angle) * this.amplitude * .5;
+	  this.x += tide * this.ratio;
 	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
 	};
 	
@@ -330,16 +343,18 @@
 	const Listener = __webpack_require__(3);
 	const Color = __webpack_require__(8);
 	
-	function Ship(wave, ctx){
+	function Ship(wave, ctx, ratio){
 	  this.wave = wave;
 	  this.ctx = ctx;
 	  this.x = Math.random() * (window.innerWidth - 100) + 50;
 	  this.y = 0;
 	  this.tilt = 0;
+	  this.ratio = ratio;
 	  this.colorDifference = (Math.floor(Math.random() * 5) - 2) * 15;
 	}
 	
 	Ship.prototype.render = function(){
+	  const ratio = this.ratio;
 	  this.ctx.fillStyle = Color.hull();
 	
 	  this.ctx.save();
@@ -348,7 +363,7 @@
 	  this.ctx.beginPath();
 	  const begin = .2 + this.tilt;
 	  const end = Math.PI-.2 + this.tilt;
-	  this.ctx.arc(this.x, this.y - 20, 25, begin, end);
+	  this.ctx.arc(this.x, this.y - 20 * ratio, 25 * ratio, begin, end);
 	  this.ctx.fill();
 	
 	  // rotate for mast and sail
@@ -364,9 +379,9 @@
 	
 	  // sail
 	  this.ctx.fillStyle = Color.sail(this.colorDifference);
-	  this.ctx.moveTo(0, -60);
-	  this.ctx.lineTo(-30 - (this.tilt * 60), -20);
-	  this.ctx.lineTo(30 - (this.tilt * 60), -20);
+	  this.ctx.moveTo(0, -60 * ratio);
+	  this.ctx.lineTo(-30 * ratio - (this.tilt * 60 * ratio), -20 * ratio);
+	  this.ctx.lineTo(30 * ratio - (this.tilt * 60 * ratio), -20 * ratio);
 	  this.ctx.fill();
 	
 	  this.ctx.restore();
@@ -397,7 +412,7 @@
 	      const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
 	
 	      // maybe make use of the tide variable when determining x movement
-	      this.x += 6 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	      this.x += 6 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	      this.tilt = (Math.PI / 2) * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	
 	      break
