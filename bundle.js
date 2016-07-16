@@ -55,6 +55,7 @@
 
 	const Canvas = __webpack_require__(2);
 	const Layer = __webpack_require__(4);
+	const Color = __webpack_require__(8);
 	
 	// global singleton canvas, or too dangerous?
 	
@@ -67,16 +68,6 @@
 	
 	  this.tideIn = true;
 	  this.tide = 3;
-	
-	  this.lIncreasing = true;
-	
-	  // add a separate color global class!
-	  this.color = {
-	    h: Math.random() * 360,
-	    s: 100,
-	    l: 5,
-	    a: 1
-	  };
 	
 	  this.layers = [];
 	
@@ -99,33 +90,17 @@
 	  }
 	};
 	
-	Game.prototype.changeColor = function(){
-	  this.color.h >= 360 ? this.color.h = 0 : this.color.h += .05;
-	
-	  if(this.lIncreasing){
-	    if(this.color.l >= 30){
-	      this.lIncreasing = false;
-	      this.color.l -= .005;
-	    } else this.color.l += .005;
-	  } else {
-	    if(this.color.l <= 5){
-	      this.lIncreasing = true;
-	      this.color.l += .005;
-	    } else this.color.l -= .005;
-	  }
-	};
-	
 	Game.prototype.render = function(){
-	  this.changeColor();
-	  this.changeTide();
-	
-	  this.canvas.render(this.color);
+	  this.canvas.render();
 	  this.layers.forEach( layer => {
-	    layer.render(this.color, this.tide);
+	    layer.render(this.tide);
 	  });
 	};
 	
 	Game.prototype.run = function(){
+	  Color.step();
+	  this.changeTide();
+	
 	  this.render();
 	  window.requestAnimationFrame(() => this.run());
 	};
@@ -135,8 +110,10 @@
 
 /***/ },
 /* 2 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
+	const Color = __webpack_require__(8);
+	
 	function Canvas(){
 	  this.self = document.getElementById("canvas")
 	
@@ -151,9 +128,9 @@
 	  this.ctx.globalAlpha = 0.7;
 	}
 	
-	Canvas.prototype.render = function (color) {
-	  const hsla = `hsla(${color.h}, ${color.s}%, ${color.l}%, ${color.a})`;
-	  this.self.style.background = hsla;
+	Canvas.prototype.render = function () {
+	  this.self.style.background = Color.main();
+	  console.log(Color.main());
 	  this.ctx.clearRect(0, 0, this.width, this.height);
 	};
 	
@@ -218,21 +195,21 @@
 	
 	Layer.prototype.populate = function () {
 	  const offset = this.depth * 50;
-	  const wave = new Wave(this.canvas, offset, "rgba(255, 255, 255, .3)");
+	  const wave = new Wave(this.canvas, offset);
 	  this.wave = wave;
 	
 	  this.ships = [];
-	  const count = Math.floor(Math.random() * 3);
+	  const count = 1
 	  for(let i = 0; i < count; i++){
 	    const ship = new Ship(this.wave, this.canvas.ctx);
 	    this.ships.push(ship);
 	  }
 	};
 	
-	Layer.prototype.render = function (color, tide) {
+	Layer.prototype.render = function (tide) {
 	  this.ships.forEach( ship => {
 	    ship.move();
-	    ship.render(color);
+	    ship.render();
 	  });
 	  this.wave.render(tide); // TODO: globalize game for easy tide reference??
 	};
@@ -245,11 +222,11 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Point = __webpack_require__(6);
+	const Color = __webpack_require__(8);
 	
-	function Wave(canvas, offset, color) {
+	function Wave(canvas, offset) {
 	  this.canvas = canvas;
 	  this.points = Point.generatePoints(canvas.width, canvas.height, offset);
-	  this.color = color;
 	}
 	
 	Wave.prototype.render = function(tide) {
@@ -258,7 +235,7 @@
 	  const height = this.canvas.height;
 	
 	  ctx.save();
-	  ctx.fillStyle = this.color;
+	  ctx.fillStyle = Color.wave();
 	  ctx.beginPath();
 	  ctx.moveTo(this.points[0].x, this.points[0].y);
 	  this.points.forEach( (point, i) => {
@@ -352,6 +329,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Listener = __webpack_require__(3);
+	const Color = __webpack_require__(8);
 	
 	function Ship(wave, ctx){
 	  this.wave = wave;
@@ -361,9 +339,8 @@
 	  this.tilt = 0;
 	}
 	
-	Ship.prototype.render = function(color){
-	  const hsla = `hsla(${color.h + 120}, ${color.s}%, 0%, ${color.a})`;
-	  this.ctx.fillStyle = hsla;
+	Ship.prototype.render = function(){
+	  this.ctx.fillStyle = Color.hull();
 	
 	  this.ctx.save();
 	
@@ -386,7 +363,7 @@
 	  this.ctx.beginPath();
 	
 	  // sail
-	  this.ctx.fillStyle = "white";
+	  this.ctx.fillStyle = Color.sail();
 	  this.ctx.moveTo(0, -60);
 	  this.ctx.lineTo(-30 - (this.tilt * 60), -20);
 	  this.ctx.lineTo(30 - (this.tilt * 60), -20);
@@ -435,6 +412,57 @@
 	
 	
 	// y(t) = (y0−2y1+y2)t^2 + (2y1−2y0)t + y0
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports) {
+
+	function Color(){
+	    this.lIncreasing = true;
+	
+	    this.h = Math.random() * 360;
+	    this.s = 100;
+	    this.l = 10;
+	}
+	
+	Color.prototype.step = function(){
+	  this.h >= 360 ? this.h = 0 : this.h += .05;
+	
+	  if(this.lIncreasing){
+	    if(this.l >= 30){
+	      this.lIncreasing = false;
+	      this.l -= .005;
+	    } else this.l += .005;
+	  } else {
+	    if(this.l <= 5){
+	      this.lIncreasing = true;
+	      this.l += .005;
+	    } else this.l -= .005;
+	  }
+	};
+	
+	Color.prototype.main = function () {
+	  const hsla = `hsla(${this.h}, ${this.s}%, ${this.l}%, 1)`;
+	  return hsla;
+	};
+	
+	Color.prototype.hull = function () {
+	  const rgba = `rgba(0, 0, 0, 0.9)`;
+	  return rgba;
+	};
+	
+	Color.prototype.wave = function () {
+	  const rgba = `rgba(255, 255, 255, 0.2)`;
+	  return rgba;
+	};
+	
+	Color.prototype.sail = function () {
+	  const hsla = `hsla(${this.h + 120}, ${this.s}%, ${this.l}%, .9)`;
+	  return hsla;
+	};
+	
+	module.exports = new Color;
 
 
 /***/ }
