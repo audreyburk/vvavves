@@ -130,7 +130,6 @@
 	
 	Canvas.prototype.render = function () {
 	  this.self.style.background = Color.main();
-	  console.log(Color.main());
 	  this.ctx.clearRect(0, 0, this.width, this.height);
 	};
 	
@@ -194,8 +193,8 @@
 	}
 	
 	Layer.prototype.populate = function () {
-	  const offset = this.depth * 50;
-	  const wave = new Wave(this.canvas, offset);
+	  const y = this.depth * 50;
+	  const wave = new Wave(this.canvas, y);
 	  this.wave = wave;
 	
 	  this.ships = [];
@@ -396,7 +395,6 @@
 	
 	      this.y = (prevPoint.y * leftWeight + point.y * rightWeight);
 	      const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
-	      console.log(heightWidthRatio);
 	
 	      // maybe make use of the tide variable when determining x movement
 	      this.x += 6 * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
