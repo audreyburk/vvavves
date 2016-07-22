@@ -177,9 +177,8 @@
 	};
 	
 	Color.prototype.star = function () {
-	    const hsla = `hsla(${this.h}, 75%, 50%, .8)`;
-	    // return hsla;
-	    return "white";
+	    const hsla = `hsla(${this.h}, 50%, 85%, .9)`;
+	    return hsla;
 	};
 	
 	Color.prototype.sail = function (dif) {
@@ -230,10 +229,13 @@
 	    ship.move();
 	    ship.render();
 	  });
-	  this.stars.forEach( star => {
+	  this.stars.forEach( (star, i, arr) => {
 	    star.move();
-	    star.render();
+	    if(star.radius < 0.015){
+	      arr[i] = null;
+	    } else {} star.render();
 	  });
+	  this.stars = this.stars.filter(Boolean);
 	  this.wave.render(tide); // globalize game for easy tide reference??
 	};
 	
@@ -521,10 +523,16 @@
 	
 	  this.radius = 4;
 	  this.x = Math.random() * window.innerWidth;
-	  this.y = Math.random() * 20 + 20;
+	  this.y = -10;
 	}
 	
 	Star.prototype.move = function () {
+	  if(this.x < this.wave.points[0].x){
+	    this.x = window.innerWidth + 50;
+	  } else if(this.x > this.wave.points[this.wave.points.length - 1].x){
+	    this.x = -50;
+	  }
+	  
 	  for(let i = 0; i < this.wave.points.length; i++){
 	    const point = this.wave.points[i];
 	    if(point.x > this.x){
@@ -539,11 +547,10 @@
 	      const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
 	
 	      if(this.y < waveY - 2){
-	        this.x += Math.random();
+	        this.x += Math.random() - 1;
 	        this.y += Math.random() * 3;
 	      } else {
 	        this.radius -= 0.005;
-	        if(this.radius < .05) this.radius = .05
 	        this.y = waveY;
 	        const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
 	
