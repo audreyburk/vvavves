@@ -238,7 +238,7 @@
 	};
 	
 	Layer.prototype.addStars = function () {
-	  if(Math.floor(Math.random() * 200) === 0){
+	  if(Math.floor(Math.random() * 200) < 10){
 	    const star = new Star(this.wave, this.canvas.ctx, this.ratio);
 	    this.stars.push(star);
 	  }
@@ -519,37 +519,40 @@
 	  this.ctx = ctx;
 	  this.ratio = ratio;
 	
+	  this.radius = 4;
 	  this.x = Math.random() * window.innerWidth;
 	  this.y = Math.random() * 20 + 20;
 	}
 	
 	Star.prototype.move = function () {
-	  this.x += Math.random();
-	  this.y += Math.random() * 2;
-	  // for(let i = 0; i < this.wave.points.length; i++){
-	  //   const point = this.wave.points[i];
-	  //   if(point.x > this.x){
-	  //     const prevPoint = this.wave.points[i-1];
-	  //
-	  //     if(){
-	  //
-	  //     } else {
-	  //
-	  //       const total = Math.abs(point.x - prevPoint.x)
-	  //       const left = Math.abs(this.x - prevPoint.x);
-	  //       const right = Math.abs(this.x - point.x);
-	  //       const leftWeight = right / total; // opposite on purpose
-	  //       const rightWeight = left / total; // closer should mean bigger, not smaller
-	  //
-	  //       this.y = (prevPoint.y * leftWeight + point.y * rightWeight);
-	  //       const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
-	  //
-	  //       // maybe make use of the tide variable when determining x movement
-	  //       this.x += 6 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
-	  //       this.tilt = (Math.PI / 2) * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
-	  //     }
-	  //     break
-	  //   }
+	  for(let i = 0; i < this.wave.points.length; i++){
+	    const point = this.wave.points[i];
+	    if(point.x > this.x){
+	      const prevPoint = this.wave.points[i-1];
+	
+	      const total = Math.abs(point.x - prevPoint.x)
+	      const left = Math.abs(this.x - prevPoint.x);
+	      const right = Math.abs(this.x - point.x);
+	      const leftWeight = right / total; // opposite on purpose
+	      const rightWeight = left / total; // closer should mean bigger, not smaller
+	
+	      const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
+	
+	      if(this.y < waveY - 2){
+	        this.x += Math.random();
+	        this.y += Math.random() * 3;
+	      } else {
+	        this.radius -= 0.005;
+	        if(this.radius < .05) this.radius = .05
+	        this.y = waveY;
+	        const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
+	
+	        // maybe make use of the tide variable when determining x movement
+	        this.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	      }
+	      break
+	    }
+	  }
 	};
 	
 	
@@ -562,7 +565,7 @@
 	  this.ctx.beginPath();
 	  const begin = .2 + this.tilt;
 	  const end = Math.PI-.2 + this.tilt;
-	  this.ctx.arc(this.x, this.y, 10 * ratio, 0, Math.PI * 2);
+	  this.ctx.arc(this.x, this.y, this.radius * ratio, 0, Math.PI * 2);
 	  this.ctx.fill();
 	  this.ctx.closePath();
 	
