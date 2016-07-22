@@ -55,21 +55,17 @@
 
 	const Canvas = __webpack_require__(2);
 	const Layer = __webpack_require__(4);
-	const Color = __webpack_require__(8);
+	const Color = __webpack_require__(3);
 	
 	// global singleton canvas, or too dangerous?
 	
-	const Listener = __webpack_require__(3);
+	const Listener = __webpack_require__(7);
 	
 	function Game(){
 	  this.canvas = new Canvas;
-	  this.waves = [];
-	  this.ships = [];
-	
-	  this.tideIn = true;
-	  this.tide = 3;
-	
 	  this.layers = [];
+	
+	  this.tide = 3;
 	
 	  for(let i = 0; i < 5; i++){
 	    const layer = new Layer(i, this.canvas);
@@ -112,7 +108,7 @@
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Color = __webpack_require__(8);
+	const Color = __webpack_require__(3);
 	
 	function Canvas(){
 	  this.self = document.getElementById("canvas")
@@ -141,42 +137,54 @@
 /* 3 */
 /***/ function(module, exports) {
 
-	const _viableKeys = [37, 38, 39, 40];
+	function Color(){
+	    this.lIncreasing = true;
 	
-	function Listener(){
-	  this.keys = {};
-	  this.mouseX = 0;
-	  this.mouseY = 0;
-	
-	  document.addEventListener("keydown", e => this._keyDown(e));
-	  document.addEventListener("keyup", e => this._keyUp(e));
-	  document.addEventListener("mousemove", e => this._mouseMove(e));
-	  document.addEventListener("mouseenter", e => this._mouseMove(e));
+	    this.h = Math.random() * 360;
+	    this.s = 100;
+	    this.l = 10;
 	}
 	
-	Listener.prototype._keyDown = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    this.keys[e.keyCode] = true;
+	Color.prototype.step = function(){
+	  this.h >= 360 ? this.h = 0 : this.h += .05;
+	
+	  if(this.lIncreasing){
+	    if(this.l >= 30){
+	      this.lIncreasing = false;
+	      this.l -= .005;
+	    } else this.l += .005;
+	  } else {
+	    if(this.l <= 5){
+	      this.lIncreasing = true;
+	      this.l += .005;
+	    } else this.l -= .005;
 	  }
 	};
 	
-	Listener.prototype._keyUp = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    delete this.keys[code];
-	  }
+	Color.prototype.main = function () {
+	  const hsla = `hsla(${this.h}, ${this.s}%, ${this.l}%, 1)`;
+	  return hsla;
 	};
 	
-	Listener.prototype._mouseMove = function (e) {
-	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
-	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
+	Color.prototype.wave = function () {
+	  const rgba = `rgba(255, 255, 255, 0.3)`;
+	  return rgba;
 	};
 	
+	Color.prototype.hull = function () {
+	  const hsla = `hsla(${this.h}, 15%, 2%, 1)`;
+	  return hsla;
+	};
 	
-	module.exports = new Listener;
+	Color.prototype.sail = function (dif) {
+	  // stands out too much on light bg as is
+	  // alter lightness/opacity based on base lightness??
+	  // return "white";
+	  const hsla = `hsla(${this.h + 135 + dif}, 50%, 80%, 1)`;
+	  return hsla;
+	};
+	
+	module.exports = new Color;
 
 
 /***/ },
@@ -184,7 +192,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Wave = __webpack_require__(5);
-	const Ship = __webpack_require__(7);
+	const Ship = __webpack_require__(8);
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
@@ -222,7 +230,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Point = __webpack_require__(6);
-	const Color = __webpack_require__(8);
+	const Color = __webpack_require__(3);
 	
 	function Wave(canvas, depth, ratio) {
 	  this.canvas = canvas;
@@ -301,7 +309,7 @@
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(3);
+	const Listener = __webpack_require__(7);
 	
 	function Point(x, y, oldY, ratio){
 	  this.x = x;
@@ -342,10 +350,52 @@
 
 /***/ },
 /* 7 */
+/***/ function(module, exports) {
+
+	const _viableKeys = [37, 38, 39, 40];
+	
+	function Listener(){
+	  this.keys = {};
+	  this.mouseX = 0;
+	  this.mouseY = 0;
+	
+	  document.addEventListener("keydown", e => this._keyDown(e));
+	  document.addEventListener("keyup", e => this._keyUp(e));
+	  document.addEventListener("mousemove", e => this._mouseMove(e));
+	  document.addEventListener("mouseenter", e => this._mouseMove(e));
+	}
+	
+	Listener.prototype._keyDown = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    this.keys[e.keyCode] = true;
+	  }
+	};
+	
+	Listener.prototype._keyUp = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    delete this.keys[code];
+	  }
+	};
+	
+	Listener.prototype._mouseMove = function (e) {
+	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
+	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
+	};
+	
+	
+	module.exports = new Listener;
+
+
+/***/ },
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(3);
-	const Color = __webpack_require__(8);
+	const Listener = __webpack_require__(7);
+	const Color = __webpack_require__(3);
 	
 	function Ship(wave, ctx, ratio){
 	  this.wave = wave;
@@ -395,11 +445,17 @@
 	  // if(Listener.keys[40]) this.x += 2;
 	  // if(Listener.keys[38]) this.x -= 2;
 	
-	
 	  // this.x += Listener.mouseY * 3;
 	
-	  if(this.x < this.wave.points[0].x ||
-	     this.x > this.wave.points[this.wave.points.length - 1]) return;
+	
+	
+	  if(this.x < this.wave.points[0].x){
+	    console.log(this.x);
+	    this.x = window.innerWidth + 50;
+	  } else if(this.x > this.wave.points[this.wave.points.length - 1].x){
+	    console.log(this.x);
+	    this.x = -50;
+	  }
 	
 	  for(let i = 0; i < this.wave.points.length; i++){
 	    const point = this.wave.points[i];
@@ -430,60 +486,6 @@
 	
 	
 	// y(t) = (y0−2y1+y2)t^2 + (2y1−2y0)t + y0
-
-
-/***/ },
-/* 8 */
-/***/ function(module, exports) {
-
-	function Color(){
-	    this.lIncreasing = true;
-	
-	    this.h = Math.random() * 360;
-	    this.s = 100;
-	    this.l = 10;
-	}
-	
-	Color.prototype.step = function(){
-	  this.h >= 360 ? this.h = 0 : this.h += .05;
-	
-	  if(this.lIncreasing){
-	    if(this.l >= 30){
-	      this.lIncreasing = false;
-	      this.l -= .005;
-	    } else this.l += .005;
-	  } else {
-	    if(this.l <= 5){
-	      this.lIncreasing = true;
-	      this.l += .005;
-	    } else this.l -= .005;
-	  }
-	};
-	
-	Color.prototype.main = function () {
-	  const hsla = `hsla(${this.h}, ${this.s}%, ${this.l}%, 1)`;
-	  return hsla;
-	};
-	
-	Color.prototype.wave = function () {
-	  const rgba = `rgba(255, 255, 255, 0.3)`;
-	  return rgba;
-	};
-	
-	Color.prototype.hull = function () {
-	  const hsla = `hsla(${this.h}, 15%, 2%, 1)`;
-	  return hsla;
-	};
-	
-	Color.prototype.sail = function (dif) {
-	  // stands out too much on light bg as is
-	  // alter lightness/opacity based on base lightness??
-	  // return "white";
-	  const hsla = `hsla(${this.h + 135 + dif}, 50%, 80%, 1)`;
-	  return hsla;
-	};
-	
-	module.exports = new Color;
 
 
 /***/ }
