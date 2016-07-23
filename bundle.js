@@ -199,6 +199,7 @@
 	const Wave = __webpack_require__(5);
 	const Ship = __webpack_require__(10);
 	const Snow = __webpack_require__(12);
+	const Star = __webpack_require__(11);
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
@@ -220,10 +221,12 @@
 	  }
 	
 	  this.snow = [];
+	  this.stars = [];
 	};
 	
 	Layer.prototype.render = function (tide) {
 	  this.addSnow();
+	  this.addStars();
 	
 	  this.ships.forEach( ship => {
 	    ship.move();
@@ -231,10 +234,18 @@
 	  });
 	  this.snow.forEach( (flake, i, arr) => {
 	    flake.move();
-	    if(flake.radius < 0.015){
+	    if(flake.point.y > window.innerHeight + 20){
 	      arr[i] = null;
 	    } else {} flake.render();
 	  });
+	  this.stars.forEach( (star, i, arr) => {
+	    star.move();
+	    if(star.radius < .05){
+	      arr[i] = null;
+	    } else {} star.render();
+	  });
+	
+	
 	  this.snow = this.snow.filter(Boolean);
 	  this.wave.move(tide);
 	  this.wave.render();
@@ -244,6 +255,13 @@
 	  if(Math.floor(Math.random() * 200) < 10){
 	    const flake = new Snow(this.wave, this.canvas.ctx, this.ratio);
 	    this.snow.push(flake);
+	  }
+	};
+	
+	Layer.prototype.addStars = function () {
+	  if(Math.floor(Math.random() * 1000) < 5){
+	    const star = new Star(this.wave, this.canvas.ctx, this.ratio);
+	    this.stars.push(star);
 	  }
 	};
 	
@@ -552,24 +570,23 @@
 
 
 /***/ },
-/* 11 */,
-/* 12 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Color = __webpack_require__(3);
-	const SnowPoint = __webpack_require__(13);
+	const StarPoint = __webpack_require__(13);
 	
-	function Snow(wave, ctx, ratio){
+	function Star(wave, ctx, ratio){
 	  this.wave = wave;
 	  this.ctx = ctx;
 	  this.ratio = ratio;
 	
-	  this.point = new SnowPoint(this.ratio);
+	  this.point = new StarPoint(this.ratio);
 	
-	  this.radius = 4;
+	  this.radius = 10;
 	}
 	
-	Snow.prototype.move = function () {
+	Star.prototype.move = function () {
 	  // conditionals need to be based on spacing
 	  if(this.point.x < this.wave.points[0].x){
 	    this.point.x = window.innerWidth + 10;
@@ -603,6 +620,48 @@
 	      break
 	    }
 	  }
+	};
+	
+	
+	Star.prototype.render = function () {
+	  const ratio = this.ratio;
+	  this.ctx.fillStyle = Color.snow();
+	
+	  this.ctx.save();
+	
+	  this.ctx.beginPath();
+	  const begin = .2 + this.tilt;
+	  const end = Math.PI-.2 + this.tilt;
+	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio, 0, Math.PI * 2);
+	  this.ctx.fill();
+	  this.ctx.closePath();
+	
+	  this.ctx.restore();
+	};
+	
+	
+	module.exports = Star;
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	const Color = __webpack_require__(3);
+	const SnowPoint = __webpack_require__(13);
+	
+	function Snow(wave, ctx, ratio){
+	  this.wave = wave;
+	  this.ctx = ctx;
+	  this.ratio = ratio;
+	
+	  this.point = new SnowPoint(this.ratio);
+	
+	  this.radius = 4;
+	}
+	
+	Snow.prototype.move = function () {
+	  this.point.move();
 	};
 	
 	
