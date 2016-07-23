@@ -230,7 +230,7 @@
 	};
 	
 	Layer.prototype.render = function (tide) {
-	  if(Environment.night) this.addStars();
+	  // if(Environment.night) this.addStars();
 	  if(Environment.snowAmount > 0) this.addSnow();
 	
 	  this.ships.forEach( ship => {
@@ -239,7 +239,8 @@
 	  });
 	  this.snow.forEach( (flake, i, arr) => {
 	    flake.move();
-	    if(flake.point.y > window.innerHeight + 20){
+	    // if(flake.point.y > window.innerHeight + 20){
+	    if(flake.radius < .05){
 	      arr[i] = null;
 	    } else flake.render();
 	  });
@@ -581,20 +582,56 @@
 
 	const Color = __webpack_require__(3);
 	const SnowPoint = __webpack_require__(12);
+	const Environment = __webpack_require__(15);
 	
 	function Snow(wave, ctx, ratio){
 	  this.wave = wave;
 	  this.ctx = ctx;
 	  this.ratio = ratio;
+	  this.displacement = Math.random() * 25 * ratio;
 	
 	  this.point = new SnowPoint(this.ratio);
+	  this.falling = true;
 	
-	  this.radius = 4;
+	  this.radius = 3 + Math.random() * 2;
 	}
 	
 	Snow.prototype.move = function () {
 	  // hmm, have a global weather class?
-	  this.point.move(.5, 0);
+	  // conditionals need to be based on spacing
+	  if(this.point.x < this.wave.points[0].x){
+	    this.point.x = window.innerWidth + 10;
+	  } else if(this.point.x > this.wave.points[this.wave.points.length - 1].x){
+	    this.point.x = -10;
+	  }
+	
+	  for(let i = 0; i < this.wave.points.length; i++){
+	    const point = this.wave.points[i];
+	    if(point.x > this.point.x){
+	      const prevPoint = this.wave.points[i-1];
+	
+	      const total = Math.abs(point.x - prevPoint.x)
+	      const left = Math.abs(this.point.x - prevPoint.x);
+	      const right = Math.abs(this.point.x - point.x);
+	      const leftWeight = right / total; // opposite on purpose
+	      const rightWeight = left / total; // closer should mean bigger, not smaller
+	
+	      const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
+	
+	      if(this.falling && this.point.y < waveY - 2){
+	        this.point.move(.5, 0);
+	      } else {
+	        this.falling = false;
+	        this.radius -= Environment.snowing ? 0.002 : 0.005;
+	        this.point.y = waveY;
+	        const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
+	
+	        // maybe make use of the tide variable when determining x movement
+	        this.point.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	      }
+	      break
+	    }
+	  }
 	};
 	
 	
@@ -607,7 +644,7 @@
 	  this.ctx.beginPath();
 	  const begin = .2 + this.tilt;
 	  const end = Math.PI-.2 + this.tilt;
-	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio, 0, Math.PI * 2);
+	  this.ctx.arc(this.point.x, this.point.y + this.displacement, this.radius * ratio, 0, Math.PI * 2);
 	  this.ctx.fill();
 	  this.ctx.closePath();
 	
@@ -790,7 +827,7 @@
 	
 	  this.snowing = false;
 	  this.snowAmount = 25;
-	  this.snowCap = 25;
+	  this.snowCap = 100;
 	  this.toggleSnow();
 	}
 	
@@ -804,11 +841,11 @@
 	  let timer;
 	  if(this.snowing){
 	    this.snowing = false;
-	    timer = Math.random() * 20000 + 20000;
+	    timer = Math.random() * 50000 + 10000;
 	  } else {
 	    this.snowing = true;
-	    this.snowCap = Math.floor(Math.random() * 5) * 10 + 15;
-	    timer = Math.random() * 20000 + 20000;
+	    this.snowCap = Math.floor(Math.random() * 5) * 20 + 50;
+	    timer = Math.random() * 20000 + 30000;
 	  }
 	
 	  setTimeout(() => this.toggleSnow(), timer)
