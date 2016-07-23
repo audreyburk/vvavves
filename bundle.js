@@ -177,8 +177,19 @@
 	};
 	
 	Color.prototype.snow = function () {
-	    const hsla = `hsla(${this.h}, 50%, 85%, .9)`;
-	    return hsla;
+	  const hsla = `hsla(${this.h}, 50%, 85%, .9)`;
+	  return hsla;
+	};
+	
+	Color.prototype.star = function () {
+	  const h = this.h + Math.floor(Math.random() * 3) * 30;
+	  const hsla = `hsla(${h + 180}, 75%, 85%, .5)`;
+	  return hsla;
+	};
+	
+	Color.prototype.starGlow = function () {
+	  const hsla = `hsla(${this.h}, 0%, 100%, .05)`;
+	  return hsla;
 	};
 	
 	Color.prototype.sail = function (dif) {
@@ -198,8 +209,8 @@
 
 	const Wave = __webpack_require__(5);
 	const Ship = __webpack_require__(10);
-	const Snow = __webpack_require__(12);
-	const Star = __webpack_require__(11);
+	const Snow = __webpack_require__(11);
+	const Star = __webpack_require__(13);
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
@@ -225,7 +236,7 @@
 	};
 	
 	Layer.prototype.render = function (tide) {
-	  this.addSnow();
+	  // this.addSnow();
 	  this.addStars();
 	
 	  this.ships.forEach( ship => {
@@ -236,17 +247,18 @@
 	    flake.move();
 	    if(flake.point.y > window.innerHeight + 20){
 	      arr[i] = null;
-	    } else {} flake.render();
+	    } else flake.render();
 	  });
 	  this.stars.forEach( (star, i, arr) => {
 	    star.move();
 	    if(star.radius < .05){
 	      arr[i] = null;
-	    } else {} star.render();
+	    } else star.render();
 	  });
 	
 	
 	  this.snow = this.snow.filter(Boolean);
+	  this.stars = this.stars.filter(Boolean);
 	  this.wave.move(tide);
 	  this.wave.render();
 	};
@@ -574,81 +586,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Color = __webpack_require__(3);
-	const StarPoint = __webpack_require__(13);
-	
-	function Star(wave, ctx, ratio){
-	  this.wave = wave;
-	  this.ctx = ctx;
-	  this.ratio = ratio;
-	
-	  this.point = new StarPoint(this.ratio);
-	
-	  this.radius = 10;
-	}
-	
-	Star.prototype.move = function () {
-	  // conditionals need to be based on spacing
-	  if(this.point.x < this.wave.points[0].x){
-	    this.point.x = window.innerWidth + 10;
-	  } else if(this.point.x > this.wave.points[this.wave.points.length - 1].x){
-	    this.point.x = -10;
-	  }
-	
-	  for(let i = 0; i < this.wave.points.length; i++){
-	    const point = this.wave.points[i];
-	    if(point.x > this.point.x){
-	      const prevPoint = this.wave.points[i-1];
-	
-	      const total = Math.abs(point.x - prevPoint.x)
-	      const left = Math.abs(this.point.x - prevPoint.x);
-	      const right = Math.abs(this.point.x - point.x);
-	      const leftWeight = right / total; // opposite on purpose
-	      const rightWeight = left / total; // closer should mean bigger, not smaller
-	
-	      const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
-	
-	      if(this.point.y < waveY - 2){
-	        this.point.move();
-	      } else {
-	        this.radius -= 0.005;
-	        this.point.y = waveY;
-	        const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
-	
-	        // maybe make use of the tide variable when determining x movement
-	        this.point.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
-	      }
-	      break
-	    }
-	  }
-	};
-	
-	
-	Star.prototype.render = function () {
-	  const ratio = this.ratio;
-	  this.ctx.fillStyle = Color.snow();
-	
-	  this.ctx.save();
-	
-	  this.ctx.beginPath();
-	  const begin = .2 + this.tilt;
-	  const end = Math.PI-.2 + this.tilt;
-	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio, 0, Math.PI * 2);
-	  this.ctx.fill();
-	  this.ctx.closePath();
-	
-	  this.ctx.restore();
-	};
-	
-	
-	module.exports = Star;
-
-
-/***/ },
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	const Color = __webpack_require__(3);
-	const SnowPoint = __webpack_require__(13);
+	const SnowPoint = __webpack_require__(12);
 	
 	function Snow(wave, ctx, ratio){
 	  this.wave = wave;
@@ -661,7 +599,8 @@
 	}
 	
 	Snow.prototype.move = function () {
-	  this.point.move();
+	  // hmm, have a global weather class?
+	  this.point.move(.5, 0);
 	};
 	
 	
@@ -686,7 +625,7 @@
 
 
 /***/ },
-/* 13 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Util = __webpack_require__(7);
@@ -704,16 +643,144 @@
 	
 	Util.inherits(SnowPoint, Point);
 	
-	SnowPoint.prototype.move = function (tide) {
+	SnowPoint.prototype.move = function (breeze, updraft) {
 	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * this.ratio;
 	  this.x = this.oldX + Math.sin(this.angle) * this.amplitude * this.ratio;
-	  this.oldX += .5 * this.ratio;
+	  this.oldX += breeze * this.ratio;
 	  this.oldY += 1.5 * this.ratio;
 	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
 	};
 	
 	
 	module.exports = SnowPoint;
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	const Color = __webpack_require__(3);
+	const StarPoint = __webpack_require__(14);
+	
+	function Star(wave, ctx, ratio){
+	  this.wave = wave;
+	  this.ctx = ctx;
+	  this.ratio = ratio;
+	
+	  this.point = new StarPoint(this.ratio);
+	  this.falling = true;
+	  this.radius = 10;
+	
+	  this.glowSize = 1;
+	  this.angle = Math.random() * 360;
+	  this.speed = 0.0075 + Math.random()*0.0275;
+	}
+	
+	Star.prototype.move = function () {
+	  this.glowSize = 1 + Math.sin(this.angle);
+	  this.angle += this.speed;
+	
+	  // conditionals need to be based on spacing
+	  if(this.point.x < this.wave.points[0].x){
+	    this.point.x = window.innerWidth + 10;
+	  } else if(this.point.x > this.wave.points[this.wave.points.length - 1].x){
+	    this.point.x = -10;
+	  }
+	
+	  for(let i = 0; i < this.wave.points.length; i++){
+	    const point = this.wave.points[i];
+	    if(point.x > this.point.x){
+	      const prevPoint = this.wave.points[i-1];
+	
+	      const total = Math.abs(point.x - prevPoint.x)
+	      const left = Math.abs(this.point.x - prevPoint.x);
+	      const right = Math.abs(this.point.x - point.x);
+	      const leftWeight = right / total; // opposite on purpose
+	      const rightWeight = left / total; // closer should mean bigger, not smaller
+	
+	      const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
+	
+	      if(this.falling && this.point.y < waveY - 2){
+	        this.point.move();
+	      } else {
+	        this.falling = false;
+	        this.radius -= 0.005;
+	        this.point.y = waveY;
+	        const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
+	
+	        // maybe make use of the tide variable when determining x movement
+	        this.point.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	      }
+	      break
+	    }
+	  }
+	};
+	
+	
+	Star.prototype.render = function () {
+	  const ratio = this.ratio;
+	
+	  this.ctx.save();
+	  this.ctx.fillStyle = Color.star();
+	
+	  this.ctx.beginPath();
+	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio * .7, 0, Math.PI * 2);
+	  this.ctx.fill();
+	  this.ctx.closePath();
+	
+	  this.ctx.beginPath();
+	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio, 0, Math.PI * 2);
+	  this.ctx.fill();
+	  this.ctx.closePath();
+	
+	  this.ctx.beginPath();
+	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio * 1.3, 0, Math.PI * 2);
+	  this.ctx.fill();
+	  this.ctx.closePath();
+	
+	  this.ctx.fillStyle = Color.starGlow();
+	
+	  this.ctx.beginPath();
+	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio * this.glowSize + 30 * ratio, 0, Math.PI * 2);
+	  this.ctx.fill();
+	  this.ctx.closePath();
+	
+	  this.ctx.restore();
+	};
+	
+	
+	module.exports = Star;
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	const Util = __webpack_require__(7);
+	const Point = __webpack_require__(9);
+	
+	function StarPoint(ratio){
+	  const x = Math.random() * window.innerWidth;
+	  const y = -20;
+	  const angle = Math.random() * 360;
+	  const speed = 0.0075 + Math.random()*0.0275;
+	  const amplitude = (Math.random() * 10 + 5) * ratio;
+	
+	  Point.call(this, x, y, x, y, ratio, angle, speed, amplitude);
+	}
+	
+	Util.inherits(StarPoint, Point);
+	
+	StarPoint.prototype.move = function () {
+	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * this.ratio;
+	  this.x = this.oldX + Math.sin(this.angle) * this.amplitude * this.ratio;
+	  this.oldX += .5 * this.ratio;
+	  this.oldY += 4.5 * this.ratio;
+	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
+	};
+	
+	
+	module.exports = StarPoint;
 
 
 /***/ }
