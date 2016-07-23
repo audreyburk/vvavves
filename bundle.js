@@ -56,8 +56,8 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Canvas = __webpack_require__(2);
-	const Wave = __webpack_require__(3);
-	const Ship = __webpack_require__(5);
+	const Wave = __webpack_require__(5);
+	const Ship = __webpack_require__(10);
 	
 	function Game(){
 	  this.canvas = new Canvas;
@@ -152,10 +152,12 @@
 
 
 /***/ },
-/* 3 */
+/* 3 */,
+/* 4 */,
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Point = __webpack_require__(4);
+	const Point = __webpack_require__(9);
 	
 	function Wave(canvas, offset, color) {
 	  this.canvas = canvas;
@@ -217,7 +219,10 @@
 
 
 /***/ },
-/* 4 */
+/* 6 */,
+/* 7 */,
+/* 8 */,
+/* 9 */
 /***/ function(module, exports) {
 
 	function Point(x, y, oldY, angle, speed){
@@ -258,7 +263,7 @@
 
 
 /***/ },
-/* 5 */
+/* 10 */
 /***/ function(module, exports) {
 
 	function Ship(wave, ctx){
