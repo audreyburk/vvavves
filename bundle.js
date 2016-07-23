@@ -59,7 +59,7 @@
 	
 	// global singleton canvas, or too dangerous?
 	
-	const Listener = __webpack_require__(7);
+	const Listener = __webpack_require__(8);
 	
 	function Game(){
 	  this.canvas = new Canvas;
@@ -176,7 +176,7 @@
 	  return hsla;
 	};
 	
-	Color.prototype.star = function () {
+	Color.prototype.snow = function () {
 	    const hsla = `hsla(${this.h}, 50%, 85%, .9)`;
 	    return hsla;
 	};
@@ -197,12 +197,12 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Wave = __webpack_require__(5);
-	const Ship = __webpack_require__(8);
-	const Star = __webpack_require__(9);
+	const Ship = __webpack_require__(10);
+	const Snow = __webpack_require__(12);
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
-	  this.ratio = 1 + depth/8;
+	  this.ratio = .6 + depth/5;
 	  this.canvas = canvas;
 	
 	  this.populate();
@@ -219,30 +219,31 @@
 	    this.ships.push(ship);
 	  }
 	
-	  this.stars = [];
+	  this.snow = [];
 	};
 	
 	Layer.prototype.render = function (tide) {
-	  this.addStars();
+	  this.addSnow();
 	
 	  this.ships.forEach( ship => {
 	    ship.move();
 	    ship.render();
 	  });
-	  this.stars.forEach( (star, i, arr) => {
-	    star.move();
-	    if(star.radius < 0.015){
+	  this.snow.forEach( (flake, i, arr) => {
+	    flake.move();
+	    if(flake.radius < 0.015){
 	      arr[i] = null;
-	    } else {} star.render();
+	    } else {} flake.render();
 	  });
-	  this.stars = this.stars.filter(Boolean);
-	  this.wave.render(tide); // globalize game for easy tide reference??
+	  this.snow = this.snow.filter(Boolean);
+	  this.wave.move(tide);
+	  this.wave.render();
 	};
 	
-	Layer.prototype.addStars = function () {
+	Layer.prototype.addSnow = function () {
 	  if(Math.floor(Math.random() * 200) < 10){
-	    const star = new Star(this.wave, this.canvas.ctx, this.ratio);
-	    this.stars.push(star);
+	    const flake = new Snow(this.wave, this.canvas.ctx, this.ratio);
+	    this.snow.push(flake);
 	  }
 	};
 	
@@ -253,7 +254,7 @@
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const WavePoint = __webpack_require__(10);
+	const WavePoint = __webpack_require__(6);
 	const Color = __webpack_require__(3);
 	
 	function Wave(canvas, depth, ratio) {
@@ -269,19 +270,18 @@
 	  );
 	}
 	
-	Wave.prototype.render = function(tide) {
+	Wave.prototype.render = function() {
 	  const ctx = this.canvas.ctx;
 	  const width = this.canvas.width;
 	  const height = this.canvas.height;
 	
 	  ctx.save();
+	
 	  ctx.fillStyle = Color.wave();
 	  ctx.beginPath();
 	  ctx.moveTo(this.points[0].x, this.points[0].y);
-	  // spit movement into separate function
+	
 	  this.points.forEach( (point, i) => {
-	    console.log(point);
-	    point.move(tide);
 	    const nextPoint = this.points[i + 1];
 	    if (nextPoint) {
 	      const ctrlPoint = {
@@ -292,13 +292,16 @@
 	    }
 	  });
 	
-	  this.keepPointsInBounds();
-	
 	  ctx.lineTo(width, height);
 	  ctx.lineTo(0, height);
 	  ctx.fill();
 	
 	  ctx.restore();
+	};
+	
+	Wave.prototype.move = function (tide) {
+	  this.points.forEach( point => point.move(tide) );
+	  this.keepPointsInBounds();
 	};
 	
 	Wave.prototype.keepPointsInBounds = function(){
@@ -334,24 +337,66 @@
 
 /***/ },
 /* 6 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
-	function Point(x, y, oldX, oldY, ratio, angle, speed, amplitude){
-	  this.x = x;
-	  this.y = y;
-	  this.oldX = oldX;
-	  this.oldY = oldY;
-	  this.ratio = ratio;
-	  this.angle = angle;
-	  this.speed = speed;
-	  this.amplitude = amplitude;
+	const Util = __webpack_require__(7);
+	const Listener = __webpack_require__(8);
+	const Point = __webpack_require__(9);
+	
+	function WavePoint(x, y, oldX, oldY, ratio){
+	  const angle = Math.random() * 360;
+	  const speed = 0.0075 + Math.random()*0.0275;
+	  const amplitude = (Math.random() * 10 + 30) * ratio;
+	
+	  Point.call(this, x, y, oldX, oldY, ratio, angle, speed, amplitude)
 	}
 	
-	module.exports = Point;
+	Util.inherits(WavePoint, Point);
+	
+	WavePoint.generatePoints = function(width, height, y, ratio, spacing){
+	  const yCenter = height / 2;
+	  const points = [];
+	
+	  for (let x = -(spacing * 2); x <= width + spacing * 2; x += spacing) {
+	    let randomOffset = Math.random() * 60 - 30;
+	    let xOffset = (Math.random()*20 - 10);
+	    const point = new WavePoint(
+	      x + xOffset * ratio,
+	      x + xOffset * ratio,
+	      yCenter + (y + randomOffset + Math.random() * 20) * ratio,
+	      yCenter + (y + randomOffset + Math.random() * 20) * ratio,
+	      ratio
+	    );
+	    points.push(point);
+	  }
+	  return points;
+	};
+	
+	WavePoint.prototype.move = function (tide) {
+	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * Listener.mouseY * this.ratio * .5 + Math.sin(this.angle) * this.amplitude * .5;
+	  this.x += tide * this.ratio;
+	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
+	};
+	
+	
+	module.exports = WavePoint;
 
 
 /***/ },
 /* 7 */
+/***/ function(module, exports) {
+
+	module.exports = {
+	  inherits (ChildClass, BaseClass) {
+	    function Surrogate () { this.constructor = ChildClass; }
+	    Surrogate.prototype = BaseClass.prototype;
+	    ChildClass.prototype = new Surrogate();
+	  }
+	};
+
+
+/***/ },
+/* 8 */
 /***/ function(module, exports) {
 
 	const _viableKeys = [37, 38, 39, 40];
@@ -393,10 +438,28 @@
 
 
 /***/ },
-/* 8 */
+/* 9 */
+/***/ function(module, exports) {
+
+	function Point(x, y, oldX, oldY, ratio, angle, speed, amplitude){
+	  this.x = x;
+	  this.y = y;
+	  this.oldX = oldX;
+	  this.oldY = oldY;
+	  this.ratio = ratio;
+	  this.angle = angle;
+	  this.speed = speed;
+	  this.amplitude = amplitude;
+	}
+	
+	module.exports = Point;
+
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(7);
+	const Listener = __webpack_require__(8);
 	const Color = __webpack_require__(3);
 	
 	function Ship(wave, ctx, ratio){
@@ -489,51 +552,53 @@
 
 
 /***/ },
-/* 9 */
+/* 11 */,
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Color = __webpack_require__(3);
+	const SnowPoint = __webpack_require__(13);
 	
-	function Star(wave, ctx, ratio){
+	function Snow(wave, ctx, ratio){
 	  this.wave = wave;
 	  this.ctx = ctx;
 	  this.ratio = ratio;
 	
+	  this.point = new SnowPoint(this.ratio);
+	
 	  this.radius = 4;
-	  this.x = Math.random() * window.innerWidth;
-	  this.y = -10;
 	}
 	
-	Star.prototype.move = function () {
-	  if(this.x < this.wave.points[0].x){
-	    this.x = window.innerWidth + 50;
-	  } else if(this.x > this.wave.points[this.wave.points.length - 1].x){
-	    this.x = -50;
+	Snow.prototype.move = function () {
+	  // conditionals need to be based on spacing
+	  if(this.point.x < this.wave.points[0].x){
+	    this.point.x = window.innerWidth + 10;
+	  } else if(this.point.x > this.wave.points[this.wave.points.length - 1].x){
+	    this.point.x = -10;
 	  }
 	
 	  for(let i = 0; i < this.wave.points.length; i++){
 	    const point = this.wave.points[i];
-	    if(point.x > this.x){
+	    if(point.x > this.point.x){
 	      const prevPoint = this.wave.points[i-1];
 	
 	      const total = Math.abs(point.x - prevPoint.x)
-	      const left = Math.abs(this.x - prevPoint.x);
-	      const right = Math.abs(this.x - point.x);
+	      const left = Math.abs(this.point.x - prevPoint.x);
+	      const right = Math.abs(this.point.x - point.x);
 	      const leftWeight = right / total; // opposite on purpose
 	      const rightWeight = left / total; // closer should mean bigger, not smaller
 	
 	      const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
 	
-	      if(this.y < waveY - 2){
-	        this.x += Math.random() - 1;
-	        this.y += Math.random() * 3;
+	      if(this.point.y < waveY - 2){
+	        this.point.move();
 	      } else {
 	        this.radius -= 0.005;
-	        this.y = waveY;
+	        this.point.y = waveY;
 	        const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
 	
 	        // maybe make use of the tide variable when determining x movement
-	        this.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	        this.point.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
 	      }
 	      break
 	    }
@@ -541,16 +606,16 @@
 	};
 	
 	
-	Star.prototype.render = function () {
+	Snow.prototype.render = function () {
 	  const ratio = this.ratio;
-	  this.ctx.fillStyle = Color.star();
+	  this.ctx.fillStyle = Color.snow();
 	
 	  this.ctx.save();
 	
 	  this.ctx.beginPath();
 	  const begin = .2 + this.tilt;
 	  const end = Math.PI-.2 + this.tilt;
-	  this.ctx.arc(this.x, this.y, this.radius * ratio, 0, Math.PI * 2);
+	  this.ctx.arc(this.point.x, this.point.y, this.radius * ratio, 0, Math.PI * 2);
 	  this.ctx.fill();
 	  this.ctx.closePath();
 	
@@ -558,69 +623,38 @@
 	};
 	
 	
-	module.exports = Star;
+	module.exports = Snow;
 
 
 /***/ },
-/* 10 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(11);
-	const Listener = __webpack_require__(7);
-	const Point = __webpack_require__(6);
+	const Util = __webpack_require__(7);
+	const Point = __webpack_require__(9);
 	
-	function WavePoint(x, y, oldX, oldY, ratio){
-	  
-	
+	function SnowPoint(ratio){
+	  const x = Math.random() * window.innerWidth;
+	  const y = -20;
 	  const angle = Math.random() * 360;
 	  const speed = 0.0075 + Math.random()*0.0275;
-	  const amplitude = Math.random() * 10 + 30;
+	  const amplitude = (Math.random() * 10 + 10) * ratio;
 	
-	  Point.call(this, x, y, oldX, oldY, ratio, angle, speed, amplitude)
+	  Point.call(this, x, y, x, y, ratio, angle, speed, amplitude)
 	}
 	
-	Util.inherits(WavePoint, Point);
+	Util.inherits(SnowPoint, Point);
 	
-	WavePoint.generatePoints = function(width, height, y, ratio, spacing){
-	  const yCenter = height / 2;
-	  const points = [];
-	
-	  for (let x = -(spacing * 2); x <= width + spacing * 2; x += spacing) {
-	    let randomOffset = Math.random() * 60 - 30;
-	    let xOffset = (Math.random()*20 - 10);
-	    const point = new WavePoint(
-	      x + xOffset * ratio,
-	      x + xOffset * ratio,
-	      yCenter + y * ratio + randomOffset * ratio + Math.random() * 20,
-	      yCenter + y * ratio + randomOffset * ratio + Math.random() * 20,
-	      ratio
-	    );
-	    points.push(point);
-	  }
-	  return points;
-	};
-	
-	WavePoint.prototype.move = function (tide) {
-	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * Listener.mouseY * this.ratio * .5 + Math.sin(this.angle) * this.amplitude * .5;
-	  this.x += tide * this.ratio;
+	SnowPoint.prototype.move = function (tide) {
+	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * this.ratio;
+	  this.x = this.oldX + Math.sin(this.angle) * this.amplitude * this.ratio;
+	  this.oldX += .5 * this.ratio;
+	  this.oldY += 1.5 * this.ratio;
 	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
 	};
 	
 	
-	module.exports = WavePoint;
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports) {
-
-	module.exports = {
-	  inherits (ChildClass, BaseClass) {
-	    function Surrogate () { this.constructor = ChildClass; }
-	    Surrogate.prototype = BaseClass.prototype;
-	    ChildClass.prototype = new Surrogate();
-	  }
-	};
+	module.exports = SnowPoint;
 
 
 /***/ }
