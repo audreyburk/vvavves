@@ -56,6 +56,7 @@
 	const Canvas = __webpack_require__(2);
 	const Layer = __webpack_require__(4);
 	const Color = __webpack_require__(3);
+	const Environment = __webpack_require__(15);
 	
 	// global singleton canvas, or too dangerous?
 	
@@ -95,6 +96,7 @@
 	
 	Game.prototype.run = function(){
 	  Color.step();
+	  Environment.step();
 	  this.changeTide();
 	
 	  this.render();
@@ -135,8 +137,10 @@
 
 /***/ },
 /* 3 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
+	const Environment = __webpack_require__(15);
+	
 	function Color(){
 	    this.lIncreasing = true;
 	
@@ -147,18 +151,7 @@
 	
 	Color.prototype.step = function(){
 	  this.h >= 360 ? this.h = 0 : this.h += .05;
-	
-	  if(this.lIncreasing){
-	    if(this.l >= 30){
-	      this.lIncreasing = false;
-	      this.l -= .005;
-	    } else this.l += .005;
-	  } else {
-	    if(this.l <= 5){
-	      this.lIncreasing = true;
-	      this.l += .005;
-	    } else this.l -= .005;
-	  }
+	  this.l = Math.abs(Environment.time - 50) * .5 + 5;
 	};
 	
 	Color.prototype.main = function () {
@@ -211,6 +204,7 @@
 	const Ship = __webpack_require__(10);
 	const Snow = __webpack_require__(11);
 	const Star = __webpack_require__(13);
+	const Environment = __webpack_require__(15);
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
@@ -236,8 +230,8 @@
 	};
 	
 	Layer.prototype.render = function (tide) {
-	  // this.addSnow();
-	  this.addStars();
+	  if(Environment.night) this.addStars();
+	  if(Environment.snowAmount > 0) this.addSnow();
 	
 	  this.ships.forEach( ship => {
 	    ship.move();
@@ -264,7 +258,7 @@
 	};
 	
 	Layer.prototype.addSnow = function () {
-	  if(Math.floor(Math.random() * 200) < 10){
+	  if(Math.floor(Math.random() * 500) < Environment.snowAmount){
 	    const flake = new Snow(this.wave, this.canvas.ctx, this.ratio);
 	    this.snow.push(flake);
 	  }
@@ -781,6 +775,62 @@
 	
 	
 	module.exports = StarPoint;
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports) {
+
+	function Environment(){
+	  this.time = Math.random() * 100;
+	  this.breeze = 0;
+	  this.updraft = 0;
+	  this.tide = 0;
+	  this.night = false;
+	
+	  this.snowing = false;
+	  this.snowAmount = 25;
+	  this.snowCap = 25;
+	  this.toggleSnow();
+	}
+	
+	Environment.prototype.step = function () {
+	  console.log(this.snowing);
+	  this.stepTime();
+	  this.stepSnow();
+	};
+	
+	Environment.prototype.toggleSnow = function () {
+	  let timer;
+	  if(this.snowing){
+	    this.snowing = false;
+	    timer = Math.random() * 20000 + 20000;
+	  } else {
+	    this.snowing = true;
+	    this.snowCap = Math.floor(Math.random() * 5) * 10 + 15;
+	    timer = Math.random() * 20000 + 20000;
+	  }
+	
+	  setTimeout(() => this.toggleSnow(), timer)
+	};
+	
+	Environment.prototype.stepTime = function () {
+	  this.time += .05;
+	  if(Math.floor(this.time) === 100) this.time = 0;
+	  if(Math.floor(this.time) ===  30) this.night = true;
+	  if(Math.floor(this.time) ===  70) this.night = false;
+	};
+	
+	Environment.prototype.stepSnow = function () {
+	  if(this.snowing && this.snowAmount < this.snowCap){
+	    this.snowAmount += .05;
+	  } else if(this.snowAmount > 0) {
+	    this.snowAmount -= .05;
+	  }
+	
+	};
+	
+	module.exports = new Environment;
 
 
 /***/ }
