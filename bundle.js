@@ -54,19 +54,18 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Canvas = __webpack_require__(2);
-	const Layer = __webpack_require__(4);
+	const Layer = __webpack_require__(5);
 	const Color = __webpack_require__(3);
-	const Environment = __webpack_require__(15);
+	const Environment = __webpack_require__(4);
 	
-	// global singleton canvas, or too dangerous?
-	
-	const Listener = __webpack_require__(8);
+	const Listener = __webpack_require__(9);
 	
 	function Game(){
 	  this.canvas = new Canvas;
 	  this.layers = [];
-	
 	  this.tide = 3;
+	
+	  this.oldTime = performance.now();
 	
 	  for(let i = 0; i < 5; i++){
 	    const layer = new Layer(i, this.canvas);
@@ -76,31 +75,27 @@
 	
 	Game.init = function(){
 	  const game = new Game;
-	  game.run();
+	  game.run(performance.now());
 	};
 	
-	Game.prototype.changeTide = function () {
-	  if(this.tide > 4 * Listener.mouseX){
-	    this.tide -= 0.1;
-	  } else {
-	    this.tide += 0.1;
-	  }
-	};
-	
-	Game.prototype.render = function(){
+	Game.prototype.render = function(delta){
 	  this.canvas.render();
 	  this.layers.forEach( layer => {
-	    layer.render(this.tide);
+	    layer.render(delta);
 	  });
 	};
 	
-	Game.prototype.run = function(){
-	  Color.step();
-	  Environment.step();
-	  this.changeTide();
+	Game.prototype.run = function(time){
 	
-	  this.render();
-	  window.requestAnimationFrame(() => this.run());
+	  const delta = (time - this.oldTime) / 16.6;
+	  this.oldTime = time;
+	
+	
+	  Color.step(delta);
+	  Environment.step(delta);
+	
+	  this.render(delta);
+	  window.requestAnimationFrame(time => this.run(time));
 	};
 	
 	module.exports = Game;
@@ -139,7 +134,7 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Environment = __webpack_require__(15);
+	const Environment = __webpack_require__(4);
 	
 	function Color(){
 	    this.lIncreasing = true;
@@ -147,6 +142,8 @@
 	    this.h = Math.random() * 360;
 	    this.s = 100;
 	    this.l = 10;
+	
+	    // change saturation based on rain???
 	}
 	
 	Color.prototype.step = function(){
@@ -171,6 +168,11 @@
 	
 	Color.prototype.snow = function () {
 	  const hsla = `hsla(${this.h}, 50%, 85%, .9)`;
+	  return hsla;
+	};
+	
+	Color.prototype.rain = function () {
+	  const hsla = `hsla(${this.h}, 40%, 75%, .7)`;
 	  return hsla;
 	};
 	
@@ -200,11 +202,96 @@
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Wave = __webpack_require__(5);
-	const Ship = __webpack_require__(10);
-	const Snow = __webpack_require__(11);
-	const Star = __webpack_require__(13);
-	const Environment = __webpack_require__(15);
+	const Listener = __webpack_require__(9);
+	
+	function Environment(){
+	  this.time = Math.random() * 100;
+	  this.tide = 0;
+	  this.night = false;
+	
+	  this.snowing = false;
+	  this.snowAmount = 25;
+	  this.snowCap = 100;
+	  this.toggleSnow();
+	
+	  this.updraft = 0;
+	  this.breeze = 0;
+	  this.breezeCap = 10;
+	  this.toggleBreeze();
+	}
+	
+	Environment.prototype.step = function (delta) {
+	  this.stepTime(delta);
+	  this.stepTide(delta);
+	  this.stepSnow(delta);
+	  this.stepWind(delta);
+	};
+	
+	Environment.prototype.toggleSnow = function () {
+	  let timer;
+	  if(this.snowing){
+	    this.snowing = false;
+	    timer = Math.random() * 50000 + 10000;
+	  } else {
+	    this.snowing = true;
+	    this.snowCap = Math.floor(Math.random() * 5) * 50 + 50;
+	    console.log(`snow cap: ${this.snowCap}`);
+	    timer = Math.random() * 20000 + 30000;
+	  }
+	  setTimeout(() => this.toggleSnow(), timer);
+	};
+	
+	Environment.prototype.stepSnow = function () {
+	  if(this.snowing && this.snowAmount < this.snowCap){
+	    this.snowAmount += .05;
+	  } else if(this.snowAmount > 0) {
+	    this.snowAmount -= .05;
+	  }
+	};
+	
+	Environment.prototype.stepTime = function () {
+	  this.time += .005;
+	  if(Math.floor(this.time) === 100) this.time = 0;
+	  if(Math.floor(this.time) ===  30) this.night = true;
+	  if(Math.floor(this.time) ===  70) this.night = false;
+	};
+	
+	Environment.prototype.toggleBreeze = function () {
+	  this.breezeCap = Math.random() * 20 - Math.random() * 20;
+	  console.log(`breeze cap: ${this.breezeCap}`);
+	  const timer = Math.random() * 10000 + 10000;
+	  setTimeout(() => this.toggleBreeze(), timer);
+	};
+	
+	Environment.prototype.stepWind = function () {
+	  if(this.breeze > this.breezeCap){
+	    this.breeze -= 0.01;
+	  } else {
+	    this.breeze += 0.01;
+	  }
+	};
+	
+	Environment.prototype.stepTide = function (delta) {
+	  if(this.tide > 4 * Listener.mouseX){
+	    this.tide -= 0.1 * delta;
+	  } else {
+	    this.tide += 0.1;
+	  }
+	};
+	
+	module.exports = new Environment;
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	const Wave = __webpack_require__(6);
+	const Ship = __webpack_require__(11);
+	const Snow = __webpack_require__(12);
+	const Star = __webpack_require__(14);
+	const Rain = __webpack_require__(16);
+	const Environment = __webpack_require__(4);
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
@@ -226,19 +313,21 @@
 	  }
 	
 	  this.snow = [];
+	  this.rain = [];
 	  this.stars = [];
 	};
 	
-	Layer.prototype.render = function (tide) {
+	Layer.prototype.render = function (delta) {
 	  // if(Environment.night) this.addStars();
 	  if(Environment.snowAmount > 0) this.addSnow();
+	  // this.addRain();
 	
 	  this.ships.forEach( ship => {
-	    ship.move();
+	    ship.move(delta);
 	    ship.render();
 	  });
 	  this.snow.forEach( (flake, i, arr) => {
-	    flake.move();
+	    flake.move(delta);
 	    // if(flake.point.y > window.innerHeight + 20){
 	    if(flake.radius < .05){
 	      arr[i] = null;
@@ -250,11 +339,18 @@
 	      arr[i] = null;
 	    } else star.render();
 	  });
+	  this.rain.forEach( (drop, i, arr) => {
+	    drop.move();
+	    if(drop.y > window.innerHeight + 20){
+	      arr[i] = null;
+	    } else drop.render();
+	  });
 	
 	
 	  this.snow = this.snow.filter(Boolean);
+	  this.rain = this.rain.filter(Boolean);
 	  this.stars = this.stars.filter(Boolean);
-	  this.wave.move(tide);
+	  this.wave.move(delta);
 	  this.wave.render();
 	};
 	
@@ -262,6 +358,16 @@
 	  if(Math.floor(Math.random() * 500) < Environment.snowAmount){
 	    const flake = new Snow(this.wave, this.canvas.ctx, this.ratio);
 	    this.snow.push(flake);
+	  }
+	};
+	
+	Layer.prototype.addRain = function () {
+	  console.log(this.rain.length);
+	  if(Math.floor(Math.random() * 10)){
+	    for(let i = 0; i < 30; i++){
+	      const drop = new Rain(this.canvas.ctx, this.ratio);
+	      this.rain.push(drop);
+	    }
 	  }
 	};
 	
@@ -276,20 +382,22 @@
 
 
 /***/ },
-/* 5 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const WavePoint = __webpack_require__(6);
+	const WavePoint = __webpack_require__(7);
 	const Color = __webpack_require__(3);
+	const Environment = __webpack_require__(4);
 	
 	function Wave(canvas, depth, ratio) {
 	  this.canvas = canvas;
 	  this.ratio = ratio;
 	  this.spacing = 70 * this.ratio;
+	  this.y = canvas.height / 2 + depth * 50 * ratio;
+	
 	  this.points = WavePoint.generatePoints(
 	    canvas.width,
-	    canvas.height,
-	    depth * 50,
+	    this.y,
 	    this.ratio,
 	    this.spacing
 	  );
@@ -303,6 +411,7 @@
 	  ctx.save();
 	
 	  ctx.fillStyle = Color.wave();
+	
 	  ctx.beginPath();
 	  ctx.moveTo(this.points[0].x, this.points[0].y);
 	
@@ -324,8 +433,8 @@
 	  ctx.restore();
 	};
 	
-	Wave.prototype.move = function (tide) {
-	  this.points.forEach( point => point.move(tide) );
+	Wave.prototype.move = function (delta) {
+	  this.points.forEach( point => point.move(delta) );
 	  this.keepPointsInBounds();
 	};
 	
@@ -357,16 +466,25 @@
 	  }
 	};
 	
+	Wave.prototype.getInfo = function(x){
+	  for(let i = 0; i < this.points.length; i++){
+	    if(x > this.points[i].x){
+	      return this.chunks[i].getInfo(x);
+	    }
+	  }
+	};
+	
 	module.exports = Wave;
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(7);
-	const Listener = __webpack_require__(8);
-	const Point = __webpack_require__(9);
+	const Util = __webpack_require__(8);
+	const Listener = __webpack_require__(9);
+	const Point = __webpack_require__(10);
+	const Environment = __webpack_require__(4);
 	
 	function WavePoint(x, y, oldX, oldY, ratio){
 	  const angle = Math.random() * 360;
@@ -378,8 +496,7 @@
 	
 	Util.inherits(WavePoint, Point);
 	
-	WavePoint.generatePoints = function(width, height, y, ratio, spacing){
-	  const yCenter = height / 2;
+	WavePoint.generatePoints = function(width, y, ratio, spacing){
 	  const points = [];
 	
 	  for (let x = -(spacing * 2); x <= width + spacing * 2; x += spacing) {
@@ -388,8 +505,8 @@
 	    const point = new WavePoint(
 	      x + xOffset * ratio,
 	      x + xOffset * ratio,
-	      yCenter + (y + randomOffset + Math.random() * 20) * ratio,
-	      yCenter + (y + randomOffset + Math.random() * 20) * ratio,
+	      y + (randomOffset + Math.random() * 20) * ratio,
+	      y + (randomOffset + Math.random() * 20) * ratio,
 	      ratio
 	    );
 	    points.push(point);
@@ -397,10 +514,10 @@
 	  return points;
 	};
 	
-	WavePoint.prototype.move = function (tide) {
+	WavePoint.prototype.move = function (delta) {
 	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * Listener.mouseY * this.ratio * .5 + Math.sin(this.angle) * this.amplitude * .5;
-	  this.x += tide * this.ratio;
-	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
+	  this.x += Environment.tide * this.ratio * delta;
+	  this.angle += 1.5 * this.speed * delta; //* Math.abs(Listener.mouseX) + .5 * this.speed;
 	};
 	
 	
@@ -408,7 +525,7 @@
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -421,7 +538,7 @@
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports) {
 
 	const _viableKeys = [37, 38, 39, 40];
@@ -463,7 +580,7 @@
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports) {
 
 	function Point(x, y, oldX, oldY, ratio, angle, speed, amplitude){
@@ -481,11 +598,12 @@
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(8);
+	const Listener = __webpack_require__(9);
 	const Color = __webpack_require__(3);
+	const Environment = __webpack_require__(4);
 	
 	function Ship(wave, ctx, ratio){
 	  this.wave = wave;
@@ -531,13 +649,8 @@
 	  this.ctx.restore();
 	};
 	
-	Ship.prototype.move = function(){
-	  // if(Listener.keys[40]) this.x += 2;
-	  // if(Listener.keys[38]) this.x -= 2;
-	
-	  // this.x += Listener.mouseY * 3;
-	
-	
+	Ship.prototype.move = function(delta){
+	  this.x += .2 * Environment.breeze * delta;
 	
 	  if(this.x < this.wave.points[0].x){
 	    this.x = window.innerWidth + 50;
@@ -577,12 +690,12 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Color = __webpack_require__(3);
-	const SnowPoint = __webpack_require__(12);
-	const Environment = __webpack_require__(15);
+	const SnowPoint = __webpack_require__(13);
+	const Environment = __webpack_require__(4);
 	
 	function Snow(wave, ctx, ratio){
 	  this.wave = wave;
@@ -596,40 +709,42 @@
 	  this.radius = 3 + Math.random() * 2;
 	}
 	
-	Snow.prototype.move = function () {
-	  // hmm, have a global weather class?
-	  // conditionals need to be based on spacing
-	  if(this.point.x < this.wave.points[0].x){
-	    this.point.x = window.innerWidth + 10;
-	  } else if(this.point.x > this.wave.points[this.wave.points.length - 1].x){
-	    this.point.x = -10;
+	Snow.prototype.move = function (delta) {
+	  if(this.point.oldX < 0){
+	    this.point.oldX = window.innerWidth;
+	  } else if(this.point.oldX > window.innerWidth){
+	    this.point.oldX = 0;
 	  }
 	
-	  for(let i = 0; i < this.wave.points.length; i++){
-	    const point = this.wave.points[i];
-	    if(point.x > this.point.x){
-	      const prevPoint = this.wave.points[i-1];
+	  if(this.falling && this.point.y < this.wave.y){
+	    this.point.move(delta);
+	  } else {
+	    for(let i = 0; i < this.wave.points.length; i++){
+	      const point = this.wave.points[i];
+	      if(point.x > this.point.x){
+	        const prevPoint = this.wave.points[i-1];
 	
-	      const total = Math.abs(point.x - prevPoint.x)
-	      const left = Math.abs(this.point.x - prevPoint.x);
-	      const right = Math.abs(this.point.x - point.x);
-	      const leftWeight = right / total; // opposite on purpose
-	      const rightWeight = left / total; // closer should mean bigger, not smaller
+	        const total = Math.abs(point.x - prevPoint.x)
+	        const left = Math.abs(this.point.x - prevPoint.x);
+	        const right = Math.abs(this.point.x - point.x);
+	        const leftWeight = right / total; // opposite on purpose
+	        const rightWeight = left / total; // closer should mean bigger, not smaller
 	
-	      const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
+	        const waveY = (prevPoint.y * leftWeight + point.y * rightWeight);
 	
-	      if(this.falling && this.point.y < waveY - 2){
-	        this.point.move(.5, 0);
-	      } else {
-	        this.falling = false;
-	        this.radius -= Environment.snowing ? 0.002 : 0.005;
-	        this.point.y = waveY;
-	        const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
+	        if(this.falling && this.point.y < waveY - 2){
+	          this.point.move(delta);
+	        } else {
+	          this.falling = false;
+	          this.radius -= Environment.snowing ? 0.002 : 0.005;
+	          this.point.y = waveY;
+	          const heightWidthRatio = (point.y - prevPoint.y) / (point.x - prevPoint.x);
 	
-	        // maybe make use of the tide variable when determining x movement
-	        this.point.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	          // maybe make use of the tide variable when determining x movement
+	          this.point.x += 1 * this.ratio * heightWidthRatio * (leftWeight < rightWeight ? leftWeight : rightWeight);
+	        }
+	        break
 	      }
-	      break
 	    }
 	  }
 	};
@@ -656,11 +771,12 @@
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(7);
-	const Point = __webpack_require__(9);
+	const Util = __webpack_require__(8);
+	const Point = __webpack_require__(10);
+	const Environment = __webpack_require__(4);
 	
 	function SnowPoint(ratio){
 	  const x = Math.random() * window.innerWidth;
@@ -674,12 +790,12 @@
 	
 	Util.inherits(SnowPoint, Point);
 	
-	SnowPoint.prototype.move = function (breeze, updraft) {
+	SnowPoint.prototype.move = function (delta) {
 	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * this.ratio;
 	  this.x = this.oldX + Math.sin(this.angle) * this.amplitude * this.ratio;
-	  this.oldX += breeze * this.ratio;
-	  this.oldY += 1.5 * this.ratio;
-	  this.angle += 1.5 * this.speed; //* Math.abs(Listener.mouseX) + .5 * this.speed;
+	  this.oldX += Environment.breeze * this.ratio * delta;
+	  this.oldY += 1.5 * this.ratio - Environment.updraft * delta;
+	  this.angle += 1.5 * this.speed * delta; //* Math.abs(Listener.mouseX) + .5 * this.speed;
 	};
 	
 	
@@ -687,11 +803,11 @@
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Color = __webpack_require__(3);
-	const StarPoint = __webpack_require__(14);
+	const StarPoint = __webpack_require__(15);
 	
 	function Star(wave, ctx, ratio){
 	  this.wave = wave;
@@ -784,11 +900,11 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(7);
-	const Point = __webpack_require__(9);
+	const Util = __webpack_require__(8);
+	const Point = __webpack_require__(10);
 	
 	function StarPoint(ratio){
 	  const x = Math.random() * window.innerWidth;
@@ -815,59 +931,49 @@
 
 
 /***/ },
-/* 15 */
-/***/ function(module, exports) {
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
 
-	function Environment(){
-	  this.time = Math.random() * 100;
-	  this.breeze = 0;
-	  this.updraft = 0;
-	  this.tide = 0;
-	  this.night = false;
+	const Color = __webpack_require__(3);
+	const Environment = __webpack_require__(4);
 	
-	  this.snowing = false;
-	  this.snowAmount = 25;
-	  this.snowCap = 100;
-	  this.toggleSnow();
+	function Rain(ctx, ratio){
+	  this.ctx = ctx;
+	  this.ratio = ratio;
+	  this.x = Math.random() * window.innerWidth;
+	  this.y = -20;
+	  this.speed = 15;
 	}
 	
-	Environment.prototype.step = function () {
-	  console.log(this.snowing);
-	  this.stepTime();
-	  this.stepSnow();
-	};
-	
-	Environment.prototype.toggleSnow = function () {
-	  let timer;
-	  if(this.snowing){
-	    this.snowing = false;
-	    timer = Math.random() * 50000 + 10000;
-	  } else {
-	    this.snowing = true;
-	    this.snowCap = Math.floor(Math.random() * 5) * 20 + 50;
-	    timer = Math.random() * 20000 + 30000;
+	Rain.prototype.move = function () {
+	  if(this.x < 0){
+	    this.x = window.innerWidth;
+	  } else if(this.x > window.innerWidth){
+	    this.x = 0;
 	  }
 	
-	  setTimeout(() => this.toggleSnow(), timer)
+	  this.y += this.speed * this.ratio;
+	  this.x += .5 * Environment.breeze * this.ratio;
 	};
 	
-	Environment.prototype.stepTime = function () {
-	  this.time += .05;
-	  if(Math.floor(this.time) === 100) this.time = 0;
-	  if(Math.floor(this.time) ===  30) this.night = true;
-	  if(Math.floor(this.time) ===  70) this.night = false;
+	
+	Rain.prototype.render = function () {
+	  const ratio = this.ratio;
+	  this.ctx.strokeStyle = Color.rain();
+	
+	  this.ctx.save();
+	
+	  this.ctx.beginPath();
+	  this.ctx.moveTo(this.x, this.y);
+	  this.ctx.lineTo(this.x - Environment.breeze * ratio, this.y - 60 * ratio);
+	  this.ctx.stroke();
+	  this.ctx.closePath();
+	
+	  this.ctx.restore();
 	};
 	
-	Environment.prototype.stepSnow = function () {
-	  if(this.snowing && this.snowAmount < this.snowCap){
-	    this.snowAmount += .05;
-	  } else if(this.snowAmount > 0) {
-	    this.snowAmount -= .05;
-	  }
 	
-	};
-	
-	module.exports = new Environment;
+	module.exports = Rain;
 
 
 /***/ }
