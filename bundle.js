@@ -54,12 +54,12 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Canvas = __webpack_require__(2);
-	const Layer = __webpack_require__(4);
+	const Layer = __webpack_require__(6);
 	const Color = __webpack_require__(3);
 	
 	// global singleton canvas, or too dangerous?
 	
-	const Listener = __webpack_require__(8);
+	const Listener = __webpack_require__(5);
 	
 	function Game(){
 	  this.canvas = new Canvas;
@@ -204,13 +204,56 @@
 
 
 /***/ },
-/* 4 */
+/* 4 */,
+/* 5 */
+/***/ function(module, exports) {
+
+	const _viableKeys = [37, 38, 39, 40];
+	
+	function Listener(){
+	  this.keys = {};
+	  this.mouseX = 0;
+	  this.mouseY = 0;
+	
+	  document.addEventListener("keydown", e => this._keyDown(e));
+	  document.addEventListener("keyup", e => this._keyUp(e));
+	  document.addEventListener("mousemove", e => this._mouseMove(e));
+	  document.addEventListener("mouseenter", e => this._mouseMove(e));
+	}
+	
+	Listener.prototype._keyDown = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    this.keys[e.keyCode] = true;
+	  }
+	};
+	
+	Listener.prototype._keyUp = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    delete this.keys[code];
+	  }
+	};
+	
+	Listener.prototype._mouseMove = function (e) {
+	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
+	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
+	};
+	
+	
+	module.exports = new Listener;
+
+
+/***/ },
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Wave = __webpack_require__(5);
-	const Ship = __webpack_require__(10);
-	const Snow = __webpack_require__(11);
-	const Star = __webpack_require__(13);
+	const Wave = __webpack_require__(7);
+	const Ship = __webpack_require__(11);
+	const Snow = __webpack_require__(12);
+	const Star = __webpack_require__(14);
 	
 	function Layer(depth, canvas){
 	  this.depth = depth;
@@ -281,10 +324,10 @@
 
 
 /***/ },
-/* 5 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const WavePoint = __webpack_require__(6);
+	const WavePoint = __webpack_require__(8);
 	const Color = __webpack_require__(3);
 	
 	function Wave(canvas, depth, ratio) {
@@ -366,12 +409,12 @@
 
 
 /***/ },
-/* 6 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(7);
-	const Listener = __webpack_require__(8);
-	const Point = __webpack_require__(9);
+	const Util = __webpack_require__(9);
+	const Listener = __webpack_require__(5);
+	const Point = __webpack_require__(10);
 	
 	function WavePoint(x, y, oldX, oldY, ratio){
 	  const angle = Math.random() * 360;
@@ -413,7 +456,7 @@
 
 
 /***/ },
-/* 7 */
+/* 9 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -426,49 +469,7 @@
 
 
 /***/ },
-/* 8 */
-/***/ function(module, exports) {
-
-	const _viableKeys = [37, 38, 39, 40];
-	
-	function Listener(){
-	  this.keys = {};
-	  this.mouseX = 0;
-	  this.mouseY = 0;
-	
-	  document.addEventListener("keydown", e => this._keyDown(e));
-	  document.addEventListener("keyup", e => this._keyUp(e));
-	  document.addEventListener("mousemove", e => this._mouseMove(e));
-	  document.addEventListener("mouseenter", e => this._mouseMove(e));
-	}
-	
-	Listener.prototype._keyDown = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    this.keys[e.keyCode] = true;
-	  }
-	};
-	
-	Listener.prototype._keyUp = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    delete this.keys[code];
-	  }
-	};
-	
-	Listener.prototype._mouseMove = function (e) {
-	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
-	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
-	};
-	
-	
-	module.exports = new Listener;
-
-
-/***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports) {
 
 	function Point(x, y, oldX, oldY, ratio, angle, speed, amplitude){
@@ -486,10 +487,10 @@
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(8);
+	const Listener = __webpack_require__(5);
 	const Color = __webpack_require__(3);
 	
 	function Ship(wave, ctx, ratio){
@@ -582,11 +583,11 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Color = __webpack_require__(3);
-	const SnowPoint = __webpack_require__(12);
+	const SnowPoint = __webpack_require__(13);
 	
 	function Snow(wave, ctx, ratio){
 	  this.wave = wave;
@@ -625,11 +626,11 @@
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(7);
-	const Point = __webpack_require__(9);
+	const Util = __webpack_require__(9);
+	const Point = __webpack_require__(10);
 	
 	function SnowPoint(ratio){
 	  const x = Math.random() * window.innerWidth;
@@ -656,11 +657,11 @@
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Color = __webpack_require__(3);
-	const StarPoint = __webpack_require__(14);
+	const StarPoint = __webpack_require__(15);
 	
 	function Star(wave, ctx, ratio){
 	  this.wave = wave;
@@ -753,11 +754,11 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(7);
-	const Point = __webpack_require__(9);
+	const Util = __webpack_require__(9);
+	const Point = __webpack_require__(10);
 	
 	function StarPoint(ratio){
 	  const x = Math.random() * window.innerWidth;
