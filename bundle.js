@@ -54,11 +54,11 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	const Canvas = __webpack_require__(2);
-	const Layer = __webpack_require__(5);
+	const Layer = __webpack_require__(6);
 	const Color = __webpack_require__(3);
 	const Environment = __webpack_require__(4);
 	
-	const Listener = __webpack_require__(9);
+	const Listener = __webpack_require__(5);
 	
 	function Game(){
 	  this.canvas = new Canvas;
@@ -202,16 +202,26 @@
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(9);
+	const Listener = __webpack_require__(5);
 	
 	function Environment(){
 	  this.time = Math.random() * 100;
-	  this.tide = 0;
 	  this.night = false;
 	
+	  this.tide = 0;
+	  this.tideCap = 0;
+	  this.tideMax = 4;
+	  this.toggleTide();
+	
 	  this.snowing = false;
-	  this.snowAmount = 25;
+	  this.snowAmount = 0;
 	  this.snowCap = 100;
+	
+	  this.raining = false;
+	  this.rainAmount = 0;
+	  this.rainCap = 100;
+	
+	  // Math.random() < .5 ? this.toggleRain() : this.toggleSnow();
 	  this.toggleSnow();
 	
 	  this.updraft = 0;
@@ -225,6 +235,7 @@
 	  this.stepTide(delta);
 	  this.stepSnow(delta);
 	  this.stepWind(delta);
+	  this.stepRain(delta);
 	};
 	
 	Environment.prototype.toggleSnow = function () {
@@ -232,13 +243,35 @@
 	  if(this.snowing){
 	    this.snowing = false;
 	    timer = Math.random() * 50000 + 10000;
+	    if(Math.random() > .8){
+	      setTimeout(() => this.toggleSnow(), timer);
+	    } else {
+	      setTimeout(() => this.toggleRain(), timer);
+	    }
 	  } else {
 	    this.snowing = true;
 	    this.snowCap = Math.floor(Math.random() * 5) * 50 + 50;
-	    console.log(`snow cap: ${this.snowCap}`);
 	    timer = Math.random() * 20000 + 30000;
+	    setTimeout(() => this.toggleSnow(), timer);
 	  }
-	  setTimeout(() => this.toggleSnow(), timer);
+	};
+	
+	Environment.prototype.toggleRain = function () {
+	  let timer;
+	  if(this.raining){
+	    this.raining = false;
+	    timer = Math.random() * 50000 + 10000;
+	    if(Math.random() > .8){
+	      setTimeout(() => this.toggleRain(), timer);
+	    } else {
+	      setTimeout(() => this.toggleSnow(), timer);
+	    }
+	  } else {
+	    this.raining = true;
+	    this.rainCap = Math.floor(Math.random() * 5) * 50 + 50;
+	    timer = Math.random() * 20000 + 30000;
+	    setTimeout(() => this.toggleRain(), timer);
+	  }
 	};
 	
 	Environment.prototype.stepSnow = function () {
@@ -246,6 +279,14 @@
 	    this.snowAmount += .05;
 	  } else if(this.snowAmount > 0) {
 	    this.snowAmount -= .05;
+	  }
+	};
+	
+	Environment.prototype.stepRain = function () {
+	  if(this.raining && this.rainAmount < this.rainCap){
+	    this.rainAmount += .05;
+	  } else if(this.rainAmount > 0) {
+	    this.rainAmount -= .05;
 	  }
 	};
 	
@@ -257,8 +298,8 @@
 	};
 	
 	Environment.prototype.toggleBreeze = function () {
-	  this.breezeCap = Math.random() * 20 - Math.random() * 20;
-	  console.log(`breeze cap: ${this.breezeCap}`);
+	  const dir = Math.random() < .5 ? 1 : -1;
+	  this.breezeCap = Math.random() * 12 * dir;
 	  const timer = Math.random() * 10000 + 10000;
 	  setTimeout(() => this.toggleBreeze(), timer);
 	};
@@ -271,11 +312,22 @@
 	  }
 	};
 	
+	Environment.prototype.toggleTide = function () {
+	  const dir = Math.random() < .5 ? 1 : -1;
+	  const amount = Math.random() * 2;
+	  this.tideCap += dir * amount;
+	  if(this.tideCap > this.tideMax) this.tideCap = this.tideMax;
+	  if(this.tideCap < 0 - this.tideMax) this.tideCap = 0 - this.tideMax;
+	
+	  const timer = Math.random() * 5000 + 2000;
+	  setTimeout(() => this.toggleTide(), timer);
+	};
+	
 	Environment.prototype.stepTide = function (delta) {
-	  if(this.tide > 4 * Listener.mouseX){
-	    this.tide -= 0.1 * delta;
+	  if(this.tide > this.tideCap){
+	    this.tide -= 0.01 * delta;
 	  } else {
-	    this.tide += 0.1;
+	    this.tide += 0.01;
 	  }
 	};
 	
@@ -284,9 +336,51 @@
 
 /***/ },
 /* 5 */
+/***/ function(module, exports) {
+
+	const _viableKeys = [37, 38, 39, 40];
+	
+	function Listener(){
+	  this.keys = {};
+	  this.mouseX = 0;
+	  this.mouseY = 0;
+	
+	  document.addEventListener("keydown", e => this._keyDown(e));
+	  document.addEventListener("keyup", e => this._keyUp(e));
+	  document.addEventListener("mousemove", e => this._mouseMove(e));
+	  document.addEventListener("mouseenter", e => this._mouseMove(e));
+	}
+	
+	Listener.prototype._keyDown = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    this.keys[e.keyCode] = true;
+	  }
+	};
+	
+	Listener.prototype._keyUp = function (e) {
+	  const code = e.keyCode;
+	  if(_viableKeys.includes(code)){
+	    e.preventDefault();
+	    delete this.keys[code];
+	  }
+	};
+	
+	Listener.prototype._mouseMove = function (e) {
+	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
+	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
+	};
+	
+	
+	module.exports = new Listener;
+
+
+/***/ },
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Wave = __webpack_require__(6);
+	const Wave = __webpack_require__(7);
 	const Ship = __webpack_require__(11);
 	const Snow = __webpack_require__(12);
 	const Star = __webpack_require__(14);
@@ -320,7 +414,7 @@
 	Layer.prototype.render = function (delta) {
 	  // if(Environment.night) this.addStars();
 	  if(Environment.snowAmount > 0) this.addSnow();
-	  // this.addRain();
+	  if(Environment.rainAmount > 0) this.addRain();
 	
 	  this.ships.forEach( ship => {
 	    ship.move(delta);
@@ -363,11 +457,9 @@
 	
 	Layer.prototype.addRain = function () {
 	  console.log(this.rain.length);
-	  if(Math.floor(Math.random() * 10)){
-	    for(let i = 0; i < 30; i++){
-	      const drop = new Rain(this.canvas.ctx, this.ratio);
-	      this.rain.push(drop);
-	    }
+	  if(Math.floor(Math.random() * 50) < Environment.rainAmount){
+	    const drop = new Rain(this.canvas.ctx, this.ratio);
+	    this.rain.push(drop);
 	  }
 	};
 	
@@ -382,10 +474,10 @@
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const WavePoint = __webpack_require__(7);
+	const WavePoint = __webpack_require__(8);
 	const Color = __webpack_require__(3);
 	const Environment = __webpack_require__(4);
 	
@@ -478,11 +570,11 @@
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(8);
-	const Listener = __webpack_require__(9);
+	const Util = __webpack_require__(9);
+	const Listener = __webpack_require__(5);
 	const Point = __webpack_require__(10);
 	const Environment = __webpack_require__(4);
 	
@@ -515,7 +607,7 @@
 	};
 	
 	WavePoint.prototype.move = function (delta) {
-	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * Listener.mouseY * this.ratio * .5 + Math.sin(this.angle) * this.amplitude * .5;
+	  this.y = this.oldY + Math.sin(this.angle) * this.amplitude * this.ratio * .3 + Math.sin(this.angle) * this.amplitude * .5;
 	  this.x += Environment.tide * this.ratio * delta;
 	  this.angle += 1.5 * this.speed * delta; //* Math.abs(Listener.mouseX) + .5 * this.speed;
 	};
@@ -525,7 +617,7 @@
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -535,48 +627,6 @@
 	    ChildClass.prototype = new Surrogate();
 	  }
 	};
-
-
-/***/ },
-/* 9 */
-/***/ function(module, exports) {
-
-	const _viableKeys = [37, 38, 39, 40];
-	
-	function Listener(){
-	  this.keys = {};
-	  this.mouseX = 0;
-	  this.mouseY = 0;
-	
-	  document.addEventListener("keydown", e => this._keyDown(e));
-	  document.addEventListener("keyup", e => this._keyUp(e));
-	  document.addEventListener("mousemove", e => this._mouseMove(e));
-	  document.addEventListener("mouseenter", e => this._mouseMove(e));
-	}
-	
-	Listener.prototype._keyDown = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    this.keys[e.keyCode] = true;
-	  }
-	};
-	
-	Listener.prototype._keyUp = function (e) {
-	  const code = e.keyCode;
-	  if(_viableKeys.includes(code)){
-	    e.preventDefault();
-	    delete this.keys[code];
-	  }
-	};
-	
-	Listener.prototype._mouseMove = function (e) {
-	  this.mouseX = (e.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2);
-	  this.mouseY = (window.innerHeight - e.clientY) / (window.innerHeight);
-	};
-	
-	
-	module.exports = new Listener;
 
 
 /***/ },
@@ -601,7 +651,7 @@
 /* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Listener = __webpack_require__(9);
+	const Listener = __webpack_require__(5);
 	const Color = __webpack_require__(3);
 	const Environment = __webpack_require__(4);
 	
@@ -774,7 +824,7 @@
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(8);
+	const Util = __webpack_require__(9);
 	const Point = __webpack_require__(10);
 	const Environment = __webpack_require__(4);
 	
@@ -903,7 +953,7 @@
 /* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const Util = __webpack_require__(8);
+	const Util = __webpack_require__(9);
 	const Point = __webpack_require__(10);
 	
 	function StarPoint(ratio){
@@ -965,7 +1015,7 @@
 	
 	  this.ctx.beginPath();
 	  this.ctx.moveTo(this.x, this.y);
-	  this.ctx.lineTo(this.x - Environment.breeze * ratio, this.y - 60 * ratio);
+	  this.ctx.lineTo(this.x - Environment.breeze * ratio, this.y - 100 * ratio);
 	  this.ctx.stroke();
 	  this.ctx.closePath();
 	
