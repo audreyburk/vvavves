@@ -1,6 +1,6 @@
 # VVavves
 
-[Live site](http://jordanburk.github.io/vvavves)
+[Live site](https://audreyburk.github.io/vvavves/)
 
 ### Overview
 
